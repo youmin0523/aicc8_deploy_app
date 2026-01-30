@@ -2,6 +2,7 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import PageTitle from './PageTitle';
 import AddItem from './AddItem';
+import Modal from './Modal';
 
 const ItemPanel = ({ pageTitle }) => {
   const dispatch = useDispatch();
@@ -11,12 +12,18 @@ const ItemPanel = ({ pageTitle }) => {
   const userKey = state?.sub;
   // console.log(userKey);
 
+  const isOpen = useSelector((state) => state.modal.isOpen);
+  console.log(isOpen);
+
   return (
     <div className="panel bg-[#212121] w-4/5 h-full rounded-md border border-gray-500 py-5 px-4 overflow-y-auto">
       {userKey ? (
         <div className="w-full h-full">
+          {isOpen && <Modal />}
           <PageTitle title={pageTitle} />
-          <AddItem />
+          <div className="flex flex-wrap">
+            <AddItem />
+          </div>
         </div>
       ) : (
         <div className="login-message w-full h-full flex items-center justify-center">
