@@ -6,7 +6,12 @@ import { postRequest } from '../../utils/requests';
 // 공통된 비동기 액션 생성 로직을 별도의 함수로 분리
 const postItemFetchThunk = (actionType, apiURL) => {
   return createAsyncThunk(actionType, async (postData) => {
-    console.log(postData);
+    // console.log(postData);
+    const options = {
+      body: JSON.stringify(postData),
+    };
+
+    return await postRequest(apiURL, options);
   });
 };
 
