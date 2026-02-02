@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+// initialState : 초기값 세팅
 const initialState = {
   isOpen: false,
   modalType: 'create',
