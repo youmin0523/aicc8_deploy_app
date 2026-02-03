@@ -3,9 +3,17 @@ import {
   POST_TASK_API_URL,
   GET_TASKS_API_URL,
   UPDATE_COMPLETED_TASK_API_URL,
+  DELETE_TASK_API_URL,
+  UPDATE_TASK_API_URL,
 } from '../../utils/apiUrls';
 
-import { postRequest, getRequest, patchRequest } from '../../utils/requests';
+import {
+  postRequest,
+  getRequest,
+  patchRequest,
+  deleteRequest,
+  putRequest,
+} from '../../utils/requests';
 
 // 공통된 비동기 액션 생성 로직을 별도의 함수로 분리
 const postItemFetchThunk = (actionType, apiURL) => {
@@ -19,6 +27,7 @@ const postItemFetchThunk = (actionType, apiURL) => {
   });
 };
 
+// Get Item Data Fetch
 const getItemFetchThunk = (actionType, apiURL) => {
   return createAsyncThunk(actionType, async (userId) => {
     const fullPath = `${apiURL}/${userId}`;
@@ -26,6 +35,7 @@ const getItemFetchThunk = (actionType, apiURL) => {
   });
 };
 
+// Patch Completed Data Fetch
 const updateCompletedFetchThunk = (actionType, apiURL) => {
   return createAsyncThunk(actionType, async (options) => {
     // console.log(options);
@@ -33,6 +43,28 @@ const updateCompletedFetchThunk = (actionType, apiURL) => {
   });
 };
 
+// Delete Item Data Fetch
+const deleteItemFetchThunk = (actionType, apiURL) => {
+  return createAsyncThunk(actionType, async (itemId) => {
+    const options = {
+      method: 'DELETE',
+    };
+    const fullPath = `${apiURL}/${itemId}`;
+    return await deleteRequest(fullPath, options);
+  });
+};
+
+//! Update Item Data Fetch
+const putTaskFetchThunk = (actionType, apiURL) => {
+  return createAsyncThunk(actionType, async (updateData) => {
+    const options = {
+      body: JSON.stringify(updateData),
+    };
+    return await putRequest(apiURL, options);
+  });
+};
+
+// Get Item Data Fetch
 export const fetchGetItem = getItemFetchThunk(
   'fetchGetItem',
   GET_TASKS_API_URL,
@@ -50,6 +82,18 @@ export const fetchUpdateCompleted = updateCompletedFetchThunk(
   UPDATE_COMPLETED_TASK_API_URL,
 );
 
+// Delete Item Data Fetch
+export const fetchDeleteItem = deleteItemFetchThunk(
+  'fetchDeleteItem',
+  DELETE_TASK_API_URL,
+);
+
+//! Update Item Data Fetch
+export const fetchPutTaskItem = putTaskFetchThunk(
+  'fetchPutTaskItem',
+  UPDATE_TASK_API_URL,
+);
+
 const handleFulfilled = (stateKey) => (state, action) => {
   state[stateKey] = action.payload;
 };
@@ -64,6 +108,8 @@ const apisSlice = createSlice({
     postItemData: null,
     getItemData: null,
     updateCompletedData: null,
+    deleteTaskData: null,
+    putTaskData: null,
   },
   extraReducers: (builder) => {
     builder
@@ -77,7 +123,13 @@ const apisSlice = createSlice({
         fetchUpdateCompleted.fulfilled,
         handleFulfilled('updateCompletedData'),
       )
-      .addCase(fetchUpdateCompleted.rejected, handleRejected);
+      .addCase(fetchUpdateCompleted.rejected, handleRejected)
+
+      .addCase(fetchDeleteItem.fulfilled, handleFulfilled('deleteItemData'))
+      .addCase(fetchDeleteItem.rejected, handleRejected)
+
+      .addCase(fetchPutTaskItem.fulfilled, handleFulfilled('putTaskData'))
+      .addCase(fetchPutTaskItem.rejected, handleRejected);
   },
 });
 

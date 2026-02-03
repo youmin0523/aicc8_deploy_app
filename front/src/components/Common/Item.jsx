@@ -3,14 +3,18 @@ import { MdEditDocument } from 'react-icons/md';
 import { FaTrash } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
 import {
+  fetchDeleteItem,
   fetchGetItem,
   fetchUpdateCompleted,
 } from '../../redux/slices/apiSlice';
 import { toast } from 'react-toastify';
+import { openModal } from '../../redux/slices/modalSlice';
 
 const Item = ({ task }) => {
-  const { _id, title, description, date, iscompleted, isimportant, userId } =
+  const { _id, title, description, date, iscompleted, isimportant, userid } =
     task;
+
+  // console.log(task);
   const dispatch = useDispatch();
   const [isCompleted, setIsCompleted] = useState(iscompleted);
 
@@ -58,14 +62,43 @@ const Item = ({ task }) => {
       await dispatch(fetchUpdateCompleted(options)).unwrap();
 
       newIsCompleted
-        ? toast.success('할일을 완료했습니다.')
-        : toast.success('할일이 진행 중입니다.');
+        ? toast.success('할 일을 완료했습니다.')
+        : toast.success('할 일이 진행 중입니다.');
 
-      await dispatch(fetchGetItem(userId)).unwrap();
+      await dispatch(fetchGetItem(userid)).unwrap();
     } catch (error) {
       // console.log('상태 업데이트에 실패했습니다.', error);
       toast.error('상태 업데이트에 실패했습니다.');
     }
+  };
+
+  const handleDeleteItem = async () => {
+    const confirm = window.confirm('정말 삭제하시겠습니까?');
+    // console.log(confirm);
+
+    if (!confirm) return;
+
+    if (!_id) {
+      toast.error('잘못된 사용자 접근입니다.');
+      return;
+    }
+
+    try {
+      await dispatch(fetchDeleteItem(_id)).unwrap();
+      toast.success('삭제가 완료되었습니다.');
+      await dispatch(fetchGetItem(userid)).unwrap();
+    } catch (error) {
+      toast.error('삭제에 실패했습니다. 콘솔을 확인해주세요.');
+      console.log('Delete Failed: ', error);
+    }
+  };
+
+  const handleDetailOpenModal = () => {
+    dispatch(openModal({ modalType: 'details', task }));
+  };
+
+  const handleEditOpenModal = () => {
+    dispatch(openModal({ modalType: 'update', task }));
   };
 
   return (
@@ -74,7 +107,10 @@ const Item = ({ task }) => {
         <div className="upper">
           <h2 className="text-xl font-normal mb-3 relative pb-2 flex justify-between border-b">
             <span className="font-semibold">{title}</span>
-            <span className="text-sm py-1 px-3 border border-gray-500 rounded-sm hover:bg-gray-700 cursor-pointer">
+            <span
+              className="text-sm py-1 px-3 border border-gray-500 rounded-sm hover:bg-gray-700 cursor-pointer"
+              onClick={handleDetailOpenModal}
+            >
               자세히
             </span>
           </h2>
@@ -100,15 +136,17 @@ const Item = ({ task }) => {
                 </button>
               )}
 
-              <button className="block py-1 px-4 bg-red-500 text-sm text-white rounded-md">
-                Important
-              </button>
+              {isimportant && (
+                <button className="block py-1 px-4 bg-red-500 text-sm text-white rounded-md">
+                  Important
+                </button>
+              )}
             </div>
             <div className="flex gap-2">
-              <button>
+              <button onClick={handleEditOpenModal}>
                 <MdEditDocument className="w-5 h-5" />
               </button>
-              <button>
+              <button onClick={handleDeleteItem}>
                 <FaTrash />
               </button>
             </div>
