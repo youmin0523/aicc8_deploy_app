@@ -6,7 +6,11 @@ const index = () => {
   return (
     <div className="page_section">
       <Navbar />
-      <ItemPanel pageTitle="Important Items" />
+      <ItemPanel
+        pageTitle="Important Items"
+        filteredCompleted="all"
+        filteredImportant={true}
+      />
     </div>
   );
 };
