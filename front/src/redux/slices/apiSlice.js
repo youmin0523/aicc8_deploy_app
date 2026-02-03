@@ -1,7 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { POST_TASK_API_URL, GET_TASKS_API_URL } from '../../utils/apiUrls';
+import {
+  POST_TASK_API_URL,
+  GET_TASKS_API_URL,
+  UPDATE_COMPLETED_TASK_API_URL,
+} from '../../utils/apiUrls';
 
-import { postRequest, getRequest } from '../../utils/requests';
+import { postRequest, getRequest, patchRequest } from '../../utils/requests';
 
 // 공통된 비동기 액션 생성 로직을 별도의 함수로 분리
 const postItemFetchThunk = (actionType, apiURL) => {
@@ -22,6 +26,13 @@ const getItemFetchThunk = (actionType, apiURL) => {
   });
 };
 
+const updateCompletedFetchThunk = (actionType, apiURL) => {
+  return createAsyncThunk(actionType, async (options) => {
+    // console.log(options);
+    return await patchRequest(apiURL, options);
+  });
+};
+
 export const fetchGetItem = getItemFetchThunk(
   'fetchGetItem',
   GET_TASKS_API_URL,
@@ -31,6 +42,12 @@ export const fetchGetItem = getItemFetchThunk(
 export const fetchPostItem = postItemFetchThunk(
   'fetchPostItem',
   POST_TASK_API_URL,
+);
+
+// Patch Completed Data Fetch
+export const fetchUpdateCompleted = updateCompletedFetchThunk(
+  'fetchUpdateCompleted',
+  UPDATE_COMPLETED_TASK_API_URL,
 );
 
 const handleFulfilled = (stateKey) => (state, action) => {
@@ -46,6 +63,7 @@ const apisSlice = createSlice({
   initialState: {
     postItemData: null,
     getItemData: null,
+    updateCompletedData: null,
   },
   extraReducers: (builder) => {
     builder
@@ -53,7 +71,13 @@ const apisSlice = createSlice({
       .addCase(fetchPostItem.rejected, handleRejected)
 
       .addCase(fetchGetItem.fulfilled, handleFulfilled('getItemData'))
-      .addCase(fetchGetItem.rejected, handleRejected);
+      .addCase(fetchGetItem.rejected, handleRejected)
+
+      .addCase(
+        fetchUpdateCompleted.fulfilled,
+        handleFulfilled('updateCompletedData'),
+      )
+      .addCase(fetchUpdateCompleted.rejected, handleRejected);
   },
 });
 

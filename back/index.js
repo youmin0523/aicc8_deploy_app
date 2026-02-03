@@ -17,6 +17,7 @@ app.get('/', (request, response) => {
 
 app.use(require('./routes/getRoutes'));
 app.use(require('./routes/postRoutes'));
+app.use(require('./routes/updateRoutes'));
 
 // 4. listen 설정
 app.listen(process.env.PORT, () => {
