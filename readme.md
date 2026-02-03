@@ -6,10 +6,18 @@
 
 ### 🛠 기술 스택 (Tech Stack)
 
-- **Frontend**: React (Vite), Redux Toolkit, TailwindCSS, React Router DOM, React Icons, Axios(또는 fetch wrapper), React Toastify, React Loading Skeleton
-- **Backend**: Node.js, Express.js, pg (PostgreSQL Client), CORS, Dotenv
-- **Database**: PostgreSQL
-- **Authentication**: Google OAuth 2.0 (@react-oauth/google, jwt-decode)
+| 구분 (Category)         | 기술 (Technology)                                   | 설명 (Description)                                        |
+| :---------------------- | :-------------------------------------------------- | :-------------------------------------------------------- |
+| **Frontend Framework**  | React (Vite)                                        | 빠르고 가벼운 SPA(Single Page Application) 개발 환경 제공 |
+| **State Management**    | Redux Toolkit                                       | 사용자 인증 정보, 모달 상태, API 데이터 전역 관리         |
+| **Styling**             | TailwindCSS                                         | 유틸리티 클래스 기반의 빠르고 일관된 디자인 시스템 적용   |
+| **Routing**             | React Router DOM                                    | 페이지 간 이동 및 URL에 따른 컴포넌트 렌더링 관리         |
+| **UI Components**       | React Icons, React Toastify, React Loading Skeleton | 아이콘, 알림 메시지, 로딩 스켈레톤 등 UX 향상 라이브러리  |
+| **Backend Environment** | Node.js                                             | 자바스크립트 런타임 환경                                  |
+| **Web Framework**       | Express.js                                          | RESTful API 서버 구축을 위한 웹 프레임워크                |
+| **Database**            | PostgreSQL                                          | 안정적이고 강력한 관계형 데이터베이스 시스템              |
+| **Authentication**      | Google OAuth 2.0 (@react-oauth/google)              | 보안성 높은 소셜 로그인 기능 및 JWT(JSON Web Token) 활용  |
+| **HTTP Client**         | Fetch API (Wrapper)                                 | 백엔드와의 비동기 통신 처리                               |
 
 ---
 
@@ -47,15 +55,18 @@
   - 백엔드에서 `uuidv4()`를 통해 고유 `_id` 생성 후 DB 저장.
   - 저장 성공 시 알림 메시지 표시 및 목록 갱신.
 
-#### 2) 할 일 조회 (Read)
+#### 2) 할 일 조회 및 필터링 (Read & Filtering)
 
-- **UI**: 메인 패널에 카드 형태로 리스트 출력.
-- **로딩 처리**: 데이터 로딩 중 `loading-skeleton`을 사용하여 스켈레톤 UI 표시.
-- **필터링**:
-  - `Home (/)`: 모든 할 일 표시.
-  - `Completed (/completed)`: `isCompleted: true`인 항목만 표시.
-  - `Proceeding (/proceeding)`: `isCompleted: false`인 항목만 표시.
-  - `Important (/important)`: `isImportant: true`인 항목만 표시.
+사용자는 선택한 메뉴에 따라 필터링된 할 일 목록을 확인할 수 있습니다. 필터링 로직은 프론트엔드(`ItemPanel.jsx`)에서 수행됩니다.
+
+- **필터링 상세 로직**:
+  1.  **1차 필터 (완료 여부)**:
+      - `Home`: 모든 상태의 태스크를 통과 (`filteredCompleted === 'all'`).
+      - `Completed`: `isCompleted`가 `true`인 태스크만 통과.
+      - `Proceeding`: `isCompleted`가 `false`인 태스크만 통과.
+  2.  **2차 필터 (중요 여부)**:
+      - 1차 필터를 통과한 태스크 중, `Important` 메뉴인 경우 `isImportant`가 `true`인 항목만 최종적으로 표시.
+      - 그 외 메뉴는 중요 여부와 상관없이 표시.
 
 #### 3) 할 일 수정 (Update)
 
@@ -74,11 +85,20 @@
   - `DELETE /delete_task/:itemId` API 호출.
   - 삭제 확인 후 DB에서 영구 제거 및 UI 리스트에서 즉시 제거.
 
-### 🎨 2.3 UI/UX 디자인
+### 🎨 2.3 UI/UX 및 페이지 구조 (Page Structure)
 
 - **레이아웃**:
   - **Sidebar**: 좌측 고정 네비게이션 (반응형 지원).
   - **Main Panel**: 우측 컨텐츠 영역, 스크롤 가능한 리스트 뷰.
+- **페이지 라우팅 구조**:
+
+| 경로 (Path)   | 컴포넌트 (Component) | 설명 (Description) | 필터 조건 (Filter Condition)               |
+| :------------ | :------------------- | :----------------- | :----------------------------------------- |
+| `/`           | `Home`               | 전체 대시보드      | **All Tasks** (모든 할 일 표시)            |
+| `/completed`  | `Completed`          | 완료된 항목        | **Completed Only** (`isCompleted: true`)   |
+| `/proceeding` | `Proceeding`         | 진행 중 항목       | **Incomplete Only** (`isCompleted: false`) |
+| `/important`  | `Important`          | 중요 항목          | **Important Only** (`isImportant: true`)   |
+
 - **Styling**:
   - TailwindCSS를 활용한 유틸리티 클래스 기반 스타일링.
   - 다크 테마 (`bg-[#212121]` 등) 적용.
