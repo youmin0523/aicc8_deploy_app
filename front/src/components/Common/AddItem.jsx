@@ -10,7 +10,10 @@ const AddItem = () => {
   };
 
   return (
-    <div className="add-card item w-1/3 h-[25vh] p-[0.25rem]">
+    // //! [Original Code]
+    // <div className="add-card item w-1/3 h-[25vh] p-[0.25rem]">
+    // //* [Modified Code] Responsive Grid: 1 col (Mobile), 2 col (Tablet), 3 col (Desktop)
+    <div className="add-card item w-full md:w-1/2 lg:w-1/3 h-[25vh] p-[0.25rem]">
       <div className="w-full h-full border border-gray-500 rounded-md flex py-3 items-center justify-center">
         <button
           className="flex items-center gap-2 group"

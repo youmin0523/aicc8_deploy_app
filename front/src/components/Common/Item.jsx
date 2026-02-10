@@ -102,34 +102,56 @@ const Item = ({ task }) => {
   };
 
   return (
-    <div className="item w-1/3 h-[25vh] p-[0.25rem]">
-      <div className="w-full h-full border border-gray-500 rounded-md flex py-3 px-4 flex-col justify-between bg-gray-950">
-        <div className="upper">
-          <h2 className="text-xl font-normal mb-3 relative pb-2 flex justify-between border-b">
-            <span className="font-semibold">{title}</span>
-            <span
-              className="text-sm py-1 px-3 border border-gray-500 rounded-sm hover:bg-gray-700 cursor-pointer"
-              onClick={handleDetailOpenModal}
-            >
-              자세히
-            </span>
-          </h2>
-          <p>{cutOverText(description)}</p>
+    // //! [Original Code]
+    // <div className="item w-1/3 h-[25vh] p-[0.25rem]">
+    // 항상 한 줄에 3개씩(33%) 고정되어 모바일에서 찌그러짐
+
+    // //* [Modified Code]
+    // w-full md:w-1/2 lg:w-1/3: 반응형 그리드 시스템 적용
+    // Mobile(1열) -> Tablet(2열) -> Desktop(3열)로 자연스럽게 확장
+    <div className="item w-full md:w-1/2 lg:w-1/3 h-auto min-h-[25vh] p-[0.25rem]">
+      <div className="w-full h-full border border-gray-500 rounded-md flex py-4 px-5 flex-col justify-between bg-gray-950 hover:shadow-lg transition-shadow duration-300">
+        <div className="upper w-full">
+          {/* //* [Modified Code] */}
+          {/* // Header Layout: Title(Left) + Meta(Right) 구조로 변경하여 Date 가시성 확보 */}
+          {/* // 기존 Footer에 있던 Date를 상단으로 올려 정보의 위계(Hierarchy) 정리 */}
+          <div className="flex justify-between items-start mb-3 border-b border-gray-700 pb-2">
+            <h2 className="text-xl font-normal flex-1 truncate pr-2">
+              <span className="font-semibold">{title}</span>
+            </h2>
+            <div className="flex flex-col items-end gap-1">
+              {/* 날짜를 상단으로 이동하여 하단 공간 확보 */}
+              <span className="text-xs text-gray-500 font-mono">{date}</span>
+              <span
+                className="text-sm py-1 px-3 border border-gray-500 rounded-sm hover:bg-gray-700 cursor-pointer whitespace-nowrap"
+                onClick={handleDetailOpenModal}
+              >
+                자세히
+              </span>
+            </div>
+          </div>
+
+          <p className="text-gray-300 h-[4.5rem] overflow-hidden">
+            {cutOverText(description, 60, '...')}
+          </p>
         </div>
-        <div className="lower">
-          <p className="text-sm mb-1">{date}</p>
-          <div className="item-footer flex justify-between">
-            <div className="flex gap-2">
+
+        <div className="lower mt-4 w-full">
+          {/* //* [Modified Code] */}
+          {/* // Footer Layout: 업무 상태(Left)와 관리 액션(Right)을 명확히 분리 */}
+          {/* // 사용 빈도가 높은 '완료 처리'는 좌측, 신중해야 할 '수정/삭제'는 우측 배치 */}
+          <div className="item-footer flex justify-between items-end w-full">
+            <div className="flex gap-2 flex-wrap pb-1">
               {iscompleted ? (
                 <button
-                  className="block py-1 px-4 bg-green-400 text-sm text-white rounded-md"
+                  className="block py-1 px-3 bg-green-400 text-xs text-white rounded-md whitespace-nowrap"
                   onClick={changeCompleted}
                 >
                   Completed
                 </button>
               ) : (
                 <button
-                  className="block py-1 px-4 bg-cyan-500 text-sm text-white rounded-md"
+                  className="block py-1 px-3 bg-cyan-500 text-xs text-white rounded-md whitespace-nowrap"
                   onClick={changeCompleted}
                 >
                   inCompleted
@@ -137,16 +159,23 @@ const Item = ({ task }) => {
               )}
 
               {isimportant && (
-                <button className="block py-1 px-4 bg-red-500 text-sm text-white rounded-md">
+                <button className="block py-1 px-3 bg-red-500 text-xs text-white rounded-md whitespace-nowrap">
                   Important
                 </button>
               )}
             </div>
-            <div className="flex gap-2">
-              <button onClick={handleEditOpenModal}>
+
+            <div className="flex gap-2 text-gray-400 shrink-0">
+              <button
+                onClick={handleEditOpenModal}
+                className="hover:text-white transition-colors"
+              >
                 <MdEditDocument className="w-5 h-5" />
               </button>
-              <button onClick={handleDeleteItem}>
+              <button
+                onClick={handleDeleteItem}
+                className="hover:text-white transition-colors"
+              >
                 <FaTrash />
               </button>
             </div>

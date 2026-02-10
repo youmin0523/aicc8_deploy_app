@@ -4,7 +4,10 @@ import 'react-loading-skeleton/dist/skeleton.css';
 
 const LoadingSkeleton = () => {
   return (
-    <div className="w-1/3 flex flex-col p-4 justify-between">
+    // //! [Original Code]
+    // <div className="w-1/3 flex flex-col p-4 justify-between">
+    // //* [Modified Code] Responsive Grid: Match Item.jsx (Mobile: 1col, Tablet: 2col, Desktop: 3col)
+    <div className="w-full md:w-1/2 lg:w-1/3 flex flex-col p-4 justify-between">
       <div>
         <Skeleton width="40%" height="30px" />
       </div>

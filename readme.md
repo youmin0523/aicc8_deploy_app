@@ -1,13 +1,13 @@
 # 📘 AICC 8 Deploy App (Personal Task Manager)
 
-![Project Status](https://img.shields.io/badge/Status-Active-brightgreen) ![Version](https://img.shields.io/badge/Version-1.0.0-blue) ![License](https://img.shields.io/badge/License-MIT-orange)
+![Project Status](https://img.shields.io/badge/Status-Active-brightgreen) ![Version](https://img.shields.io/badge/Version-2.2.0-blue) ![License](https://img.shields.io/badge/License-MIT-orange)
 
 > **AICC 8 Deploy App**은 사용자의 생산성을 극대화하기 위해 설계된 **개인 일정 관리 웹 애플리케이션**입니다.
 > 직관적인 UI/UX와 강력한 필터링 기능을 통해 할 일을 체계적으로 관리할 수 있으며, 구글 로그인을 통해 어디서든 자신의 데이터에 접근할 수 있습니다.
 
 ---
 
-## � 목차 (Table of Contents)
+## 📌 목차 (Table of Contents)
 
 1. [프로젝트 개요 (Overview)](#1-프로젝트-개요-overview)
 2. [주요 기능 (Key Features)](#2-주요-기능-key-features)
@@ -23,22 +23,49 @@
 ## 1. 프로젝트 개요 (Overview)
 
 이 프로젝트는 **React** 프론트엔드와 **Express.js** 백엔드, **PostgreSQL** 데이터베이스로 구성된 풀스택 웹 애플리케이션입니다.
-현대적인 웹 디자인 트렌드인 **다크 모드(Dark Mode)**를 기본 테마로 채택하였으며, **Redux Toolkit**을 활용한 전역 상태 관리로 매끄러운 사용자 경험을 제공합니다.
+
+현대적인 웹 디자인 트렌드인 **다크 모드(Dark Mode)**를 기본 테마로 채택하였으며, **반응형 웹 디자인(Responsive Web Design)**을 적용하여 모바일 환경에서도 최적화된 화면을 제공합니다.
+또한 **Redux Toolkit**을 활용한 전역 상태 관리로 매끄러운 사용자 경험을 제공합니다.
 
 ---
 
 ## 2. 주요 기능 (Key Features)
 
-사용자 관점에서 제공되는 주요 서비스 기능입니다.
+**[Latest Revision Details: v2.2_260206]**
+사용자 피드백을 반영하여 레이아웃 및 UX가 대폭 개선되었습니다.
 
-| 번호  | 카테고리     | 기능명                 | 상세 설명                                                                                                                                                                                          |
-| :---: | :----------- | :--------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1** | **인증**     | **Google 소셜 로그인** | • 별도의 회원가입 없이 Google 계정으로 원클릭 로그인이 가능합니다.<br>• JWT 기반의 사용자 인증 정보를 안전하게 관리합니다.                                                                         |
-| **2** | **대시보드** | **일정 필터링 조회**   | • **전체 보기**: 등록된 모든 일정을 최신순으로 확인합니다.<br>• **진행 중 / 완료됨**: 상태별로 탭을 나누어 업무에 집중할 수 있습니다.<br>• **중요 일정**: '중요' 표시된 일정만 모아볼 수 있습니다. |
-| **3** | **생성**     | **할 일(Task) 등록**   | • 제목, 상세 내용, 마감일(Date)을 지정하여 새 일정을 등록합니다.<br>• 등록 시 '중요 여부'와 '완료 여부'를 초기 설정할 수 있습니다.                                                                 |
-| **4** | **관리**     | **상태 관리 (Toggle)** | • 리스트에서 버튼 클릭 한 번으로 **완료/미완료** 상태를 전환합니다.<br>• 중요도 별(Star) 표시를 통해 우선순위를 조정합니다.                                                                        |
-| **5** | **수정**     | **일정 상세 수정**     | • 이미 등록된 일정을 클릭하여 제목, 내용, 날짜 등 모든 정보를 수정합니다.<br>• 수정 사항은 데이터베이스에 즉시 반영됩니다.                                                                         |
-| **6** | **삭제**     | **일정 삭제**          | • 더 이상 필요 없는 일정을 영구적으로 삭제합니다.<br>• 삭제 시 즉각적인 UI 반영으로 쾌적한 사용성을 제공합니다.                                                                                    |
+### 2.1 Authentication (사용자 인증)
+
+- **Google 소셜 로그인**: 별도의 회원가입 없이 `@react-oauth/google`을 활용한 원클릭 로그인.
+- **데이터 격리 (Data Isolation)**: **[핵심]** 로그인한 사용자(`userId`)별로 할 일 데이터가 DB에서 완벽하게 격리되어 조회됩니다.
+- **Auto Session**: Redux와 LocalStorage를 연동하여 새로고침 후에도 로그인 상태를 유지합니다.
+
+### 2.2 Navigation & Layout (네비게이션 및 레이아웃)
+
+- **Responsive Sidebar**:
+  - **Desktop**: Mini Sidebar (80px) ↔ Full Sidebar (288px) 확장/축소 기능.
+  - **Mobile**: 1024px 미만에서는 아이콘만 남거나 Drawer 메뉴(Overlay)로 변환.
+- **Vertical Alignment**: 사이드바의 메뉴 리스트가 화면 **수직 중앙(Center)**에 자동으로 배치되어 시각적 안정감을 제공합니다.
+- **Flex Layout Strategy**: `flex-1` 및 `display: flex`를 적용하여 데스크탑/모바일 불문하고 화면 잘림 없는 꽉 찬 레이아웃을 구현했습니다.
+
+### 2.3 Task Management (업무 관리)
+
+- **CRUD Operations**:
+  - **Create**: 모달(Modal) 창을 통한 간편한 할 일 등록.
+  - **Read**: 생성일 역순으로 정렬된 리스트 조회 및 `Skeleton` 로딩 애니메이션.
+  - **Update**: 제목, 내용, 날짜 등 상세 정보 수정.
+  - **Delete**: 실수 방지를 위한 컨펌(Confirm) 팝업 후 영구 삭제.
+- **Status Toggle**: 리스트 상에서 '완료/미완료' 버튼 클릭 한 번으로 상태를 즉시 변경합니다.
+- **Visual Feedback**: 중요(Important) 태그, 완료(Completed) 색상 토글 등 직관적인 피드백 제공.
+
+### 2.4 Filtering Views (조회 필터)
+
+URL 라우팅이 아닌 상태 기반 필터링으로 즉각적인 화면 전환을 제공합니다.
+
+1. **Home (All)**: 모든 상태의 업무 조회.
+2. **Completed**: 완료 처리된 업무만 모아보기.
+3. **Proceeding**: 아직 완료되지 않은 진행 중 업무만 모아보기.
+4. **Important**: '중요' 태그가 붙은 긴급 업무만 모아보기.
 
 ---
 
@@ -46,13 +73,13 @@
 
 ### 🖥️ Frontend
 
-| 기술              | 사용 목적                                        |
-| :---------------- | :----------------------------------------------- |
-| **React (Vite)**  | 컴포넌트 기반 UI 구축 및 빠른 렌더링 속도 확보   |
-| **Redux Toolkit** | 효율적인 전역 상태 관리 (Auth, Modal, Tasks)     |
-| **TailwindCSS**   | 유틸리티 퍼스트 CSS 프레임워크로 신속한 스타일링 |
-| **React Router**  | SPA(Single Page Application) 라우팅 처리         |
-| **React Icons**   | 직관적인 아이콘 사용을 통한 UX 향상              |
+| 기술              | 사용 목적                                          |
+| :---------------- | :------------------------------------------------- |
+| **React (Vite)**  | 컴포넌트 기반 UI 구축 및 빠른 렌더링 속도 확보     |
+| **Redux Toolkit** | 전역 상태 관리 (Auth, Modal, **Sidebar UI State**) |
+| **TailwindCSS**   | 유틸리티 퍼스트 CSS 프레임워크로 신속한 스타일링   |
+| **React Router**  | SPA(Single Page Application) 라우팅 처리           |
+| **React Icons**   | 직관적인 아이콘 사용을 통한 UX 향상                |
 
 ### ⚙️ Backend
 

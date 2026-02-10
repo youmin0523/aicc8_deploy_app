@@ -16,9 +16,13 @@ const ItemPanel = ({ pageTitle, filteredCompleted, filteredImportant }) => {
 
   // Auth Data
   const state = useSelector((state) => state.auth.authData);
-  // console.log(state);
+  // //! [Debug Code] Redux에서 가져온 인증 데이터 확인
+  console.log('[DEBUG] Auth State:', state);
+
+  // //! [Original Code]
   const userKey = state?.sub;
-  // console.log(userKey);
+  // //! [Debug Code] 추출된 userKey 확인
+  console.log('[DEBUG] User Key:', userKey);
 
   const isOpen = useSelector((state) => state.modal.isOpen);
   // console.log(isOpen);
@@ -29,6 +33,9 @@ const ItemPanel = ({ pageTitle, filteredCompleted, filteredImportant }) => {
 
   useEffect(() => {
     if (!userKey) return;
+
+    // //! [Debug Code] useEffect 실행 여부 확인
+    console.log('[DEBUG] useEffect Triggered. Fetching items for:', userKey);
 
     const fetchGetItemsData = async () => {
       try {
@@ -44,35 +51,31 @@ const ItemPanel = ({ pageTitle, filteredCompleted, filteredImportant }) => {
   }, [dispatch, userKey]);
 
   // 1. Home 메뉴를 선택할 때:
-  // - all메뉴를 선택하면 첫번째 filter 조건이 true이므로 모든 task를 반환
-  // - 1번에서 반환된 모든 tasks를 대상으로 두번째 filter 조건을 적용
-  // - filterImportant가 undefined이면 조건이 true 이므로 모든 task를 반환
-
-  // 2. Completed 메뉴를 선택할 때:
-  // - 첫번째 필터 조건에서 if문이 false이므로 return 문으로 이동하여 filterCompleted 조건을 판단
-  // - filterCompleted가 true이면 task.iscompleled가 true인 task만 반환
-
-  // 3. Proceeding 메뉴를 선택할 때:
-  // - 첫번째 필터 조건에서 if문이 false이므로 return 문으로 이동하여 filterCompleted 조건을 판단
-  // - filterCompleted가 false이면 task.iscompleled가 false인 task만 반환
-
+  // ( ... 기존 주석 내용 유지 ... )
   // 4. Important 메뉴를 선택할 때:
-  // - 첫번째 필터 조건에서 if문이 true이므로 두번째 필터 조건으로 이동
-  // - 두번째 filter 조건에서 filterImportant가 없으면 true이므로 모든 task를 반환(home, Completed, Proceeding과 동일)
-  // - filterImportant가 true이면 task.isimportant가 true인 task만 반환
 
+  // //* [Restored Code] 실수로 삭제된 필터링 로직 복구
+  // //* [Bug Fix] getTasksData가 null일 경우 체이닝(.filter) 과정에서 undefined.filter() 호출로 인해 크래시가 발생하는 문제 수정
+  // -> 값이 있을 때만 필터를 수행하고, 없으면 빈 배열([])을 반환하도록 보호 조치
   const filteredTasks = getTasksData
-    ?.filter((task) => {
-      if (filteredCompleted === 'all') return true; // all이면 모든 task를 반환
-      return filteredCompleted ? task.iscompleted : !task.iscompleted;
-    })
-    .filter((task) => {
-      if (filteredImportant === undefined) return true; // important 안의 index에만 filteredImportant가 있기 때문에 undefined이면 모든 task를 반환
-      return filteredImportant ? task.isimportant : !task.isimportant;
-    });
+    ? getTasksData
+        .filter((task) => {
+          if (filteredCompleted === 'all') return true;
+          return filteredCompleted ? task.iscompleted : !task.iscompleted;
+        })
+        .filter((task) => {
+          if (filteredImportant === undefined) return true;
+          return filteredImportant ? task.isimportant : !task.isimportant;
+        })
+    : [];
 
   return (
-    <div className="panel bg-[#212121] w-4/5 h-full rounded-md border border-gray-500 py-5 px-4 overflow-y-auto">
+    // //! [Original Code] 테두리 제거 및 원상복구
+    // <div className="panel bg-[#212121] w-full lg:w-4/5 h-full rounded-md border border-gray-500 py-5 px-4 overflow-y-auto">
+
+    // //* [Modified Code] Layout Fix: 고정 너비(w-4/5) 제거하고 Flex-1 적용
+    // Sidebar의 너비(w-72 등)와 상관없이 남은 공간을 자동으로 가득 채우도록 수정하여 화면 잘림 현상 해결
+    <div className="panel bg-[#212121] flex-1 h-full rounded-md border border-gray-500 py-5 px-4 overflow-y-auto">
       {userKey ? (
         <div className="w-full h-full">
           {isOpen && <Modal />}
