@@ -98,21 +98,14 @@ URL 라우팅이 아닌 상태 기반 필터링으로 즉각적인 화면 전환
 
 ## 4. 시스템 아키텍처 (System Architecture)
 
-```mermaid
-graph LR
-    A[Client (React Browser)] -- HTTP JSON Request --> B[Backend Server (Express.js)]
-    B -- SQL Queries --> C[Database (PostgreSQL)]
+상세한 시스템 아키텍처 및 데이터 흐름도는 **[ARCHITECTURE.md](./ARCHITECTURE.md)** 파일에 별도로 기술되어 있습니다.
 
-    subgraph Frontend Services
-    A1[Google OAuth] -.-> A
-    A2[Redux Store] <--> A
-    end
+- [x] **System Architecture Diagram** (Mermaid)
+- [x] **Data Flow Analysis** (Variable Lifecycle)
+- [x] **Execution Flow Map** (Critical Path)
+- [x] **Sequence Diagram** (User Interaction Flow)
 
-    subgraph Backend Services
-    B1[Controllers] <--> B
-    B2[Routes] <--> B
-    end
-```
+---
 
 ---
 

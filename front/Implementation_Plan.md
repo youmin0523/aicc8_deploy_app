@@ -117,7 +117,7 @@ graph TD
 
 ---
 
-## 2. Project History & Evolution
+## 3. Project History & Evolution
 
 이 프로젝트는 단순한 Todo 앱에서 시작하여 다음과 같은 단계별 고도화를 거쳤습니다.
 
@@ -142,7 +142,7 @@ graph TD
 
 ---
 
-## 3. Implementation Modules (History & Logic)
+## 4. Implementation Modules (History & Logic)
 
 ### [Module A] Layout & Navigation (Navbar.jsx)
 
@@ -213,7 +213,7 @@ graph TD
 
 ---
 
-## 3. Future Technical Debt (To-Do)
+## 5. Future Technical Debt (To-Do)
 
 - **Lazy Loading**: `ItemPanel`의 아이템이 많아질 경우 가상 스크롤(Virtual Scrolling) 도입 고려.
 - **Theme Support**: 현재 `App.css`에 `color-scheme: dark`가 하드코딩 되어 있음. 테마 토글 기능 확장 시 변수화 필요.
