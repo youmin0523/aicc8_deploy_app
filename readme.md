@@ -42,11 +42,14 @@
 
 ### 2.2 Navigation & Layout (네비게이션 및 레이아웃)
 
-- **Responsive Sidebar**:
-  - **Desktop**: Mini Sidebar (80px) ↔ Full Sidebar (288px) 확장/축소 기능.
-  - **Mobile**: 1024px 미만에서는 아이콘만 남거나 Drawer 메뉴(Overlay)로 변환.
-- **Vertical Alignment**: 사이드바의 메뉴 리스트가 화면 **수직 중앙(Center)**에 자동으로 배치되어 시각적 안정감을 제공합니다.
-- **Flex Layout Strategy**: `flex-1` 및 `display: flex`를 적용하여 데스크탑/모바일 불문하고 화면 잘림 없는 꽉 찬 레이아웃을 구현했습니다.
+- **Responsive Sidebar Architecture**:
+  - **Desktop (Expanded)**: 288px 너비, 메뉴명 + 아이콘 표시.
+  - **Desktop (Collapsed)**: 80px 너비, 아이콘만 중앙 정렬(Center Aligned).
+  - **Mobile**: 1024px 미만에서 Drawer 메뉴로 전환 (Overlay 백그라운드 적용).
+- **Advanced Alignment**:
+  - **Vertical Center**: 사이드바 메뉴 리스트가 화면의 수직 중앙(`my-auto`)에 위치하도록 Flexbox 정렬 최적화.
+  - **Logo Wrapper**: 로고 디자인(Visual Fix)을 위해 `div` 래퍼를 적용하여 정렬 깨짐 방지.
+- **Flex Layout Strategy**: `flex-1` 속성을 메인 패널에 적용하여, 사이드바의 상태 변화에도 부드럽게 반응하며 화면을 가득 채웁니다.
 
 ### 2.3 Task Management (업무 관리)
 

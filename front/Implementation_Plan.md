@@ -52,9 +52,68 @@
 
 ### Core State Management (Redux)
 
-- **authSlice**: 유저 로그인 정보 (`name`, `picture`, `token`) 관리.
+- **authSlice**: 유저 로그인 정보 (`name`, `picture`, `token`, `sub`) 관리.
 - **modalSlice**: 아이템 상세/수정 모달 UI 제어.
 - **apiSlice**: Backend API (`/items`, `/completed`) 비동기 통신.
+
+---
+
+## 2. System Architecture & Data Flow (New)
+
+### 2.1 System Architecture Diagram
+
+```mermaid
+graph TD
+    User[User (Browser)] -->|Interaction| UI[React UI Components]
+    UI -->|Dispatch Action| Redux[Redux Store]
+
+    subgraph Frontend Logic
+    Redux -->|Select State| UI
+    Redux -->|Async Thunk| API[API Service (Axios/Fetch)]
+    end
+
+    API -->|HTTP Request (JSON)| Server[Express Server]
+
+    subgraph Backend Logic
+    Server -->|Routing| Router[Express Router]
+    Router -->|Business Logic| Controller[Controllers]
+    Controller -->|SQL Query| DB[(PostgreSQL Database)]
+    end
+
+    DB -->|Result Set| Controller
+    Controller -->|JSON Response| API
+    API -->|Update State| Redux
+```
+
+### 2.2 Data Flow Analysis (Variable Lifecycle)
+
+주요 데이터 흐름을 추적하여 버그 발생 지점을 사전에 파악합니다.
+
+| 변수명 (Variable) | 생성 위치 (Origin)        | 변경/가공 로직 (Mutation)                      | 참조/최종 목적지 (Destination)      | 비고 (Note)            |
+| :---------------- | :------------------------ | :--------------------------------------------- | :---------------------------------- | :--------------------- |
+| **userId (sub)**  | `GoogleLogin` (Auth)      | `jwtDecode` -> `authSlice` (Redux)             | `ItemPanel.jsx` (API Request Param) | **Data Isolation Key** |
+| **isSidebarOpen** | `Navbar.jsx` (State)      | `toggleSidebar` (Click), `Resize` (Window)     | `nav` className (CSS Visibility)    | Mobile/Tablet Toggle   |
+| **getTasksData**  | `apiSlice` (Redux)        | `fetchGetItem` (Async API Call)                | `ItemPanel.jsx` (Rendering List)    | `null` Check Essential |
+| **filteredTasks** | `ItemPanel.jsx` (Derived) | `filter(isCompleted)` -> `filter(isImportant)` | `Item.jsx` (Map Render)             | Filtering Logic        |
+
+### 2.3 Execution Flow Map (Critical Path)
+
+사용자가 '할 일 목록'을 조회하는 과정(Read)의 실행 흐름입니다.
+
+1.  **Init (`ItemPanel.jsx`)**: 컴포넌트 마운트 및 `userKey`(`auth.sub`) 확인.
+2.  **Dispatch (`useEffect`)**: `if (userKey)` 조건 충족 시 `fetchGetItem(userKey)` 액션 발송.
+    - `-> apiSlice.js`: `createAsyncThunk` 실행 -> `GET /get_tasks/:userId` 요청.
+3.  **Server Processing (`getControllers.js`)**:
+    - `-> Route`: `/get_tasks/:userId` 매핑.
+    - `-> Controller`: `request.params.userId` 추출.
+    - `-> Database`: `SELECT * FROM tasks WHERE userId = $1` 쿼리 실행.
+4.  **Response Handling**:
+    - DB 결과(`rows`)를 JSON으로 반환.
+    - Redux: `fulfilled` 상태 감지 -> `state.getItemData` 업데이트.
+5.  **UI Update**:
+    - `ItemPanel`: `useSelector`로 변경된 데이터 감지.
+    - **Filtering**: `filteredCompleted`, `filteredImportant` 조건 적용.
+    - **Rendering**: `<Item />` 컴포넌트 리스트 출력.
 
 ---
 
