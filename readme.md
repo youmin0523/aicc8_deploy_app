@@ -31,7 +31,7 @@
 
 ## 2. 주요 기능 (Key Features)
 
-**[Latest Revision Details: v2.2_260206]**
+**[Latest Revision Details: v2.10_260211]**
 사용자 피드백을 반영하여 레이아웃 및 UX가 대폭 개선되었습니다.
 
 ### 2.1 Authentication (사용자 인증)
@@ -50,6 +50,9 @@
   - **Vertical Center**: 사이드바 메뉴 리스트가 화면의 수직 중앙(`my-auto`)에 위치하도록 Flexbox 정렬 최적화.
   - **Logo Wrapper**: 로고 디자인(Visual Fix)을 위해 `div` 래퍼를 적용하여 정렬 깨짐 방지.
 - **Flex Layout Strategy**: `flex-1` 속성을 메인 패널에 적용하여, 사이드바의 상태 변화에도 부드럽게 반응하며 화면을 가득 채웁니다.
+- **Mobile Experience (New)**:
+  - **Header Hover Popups**: 1024px 이하 헤더 아이콘(Today/Tomorrow)에 마우스 오버 시 할 일 목록 팝업이 표시되어 빠른 확인이 가능합니다.
+  - **Safe Logout Protocol**: 로그아웃 시 즉시 실행되지 않고, 전용 모달(Dark Modal)을 통해 사용자의 의사를 재확인하는 안전장치를 제공합니다.
 
 ### 2.3 Task Management (업무 관리)
 

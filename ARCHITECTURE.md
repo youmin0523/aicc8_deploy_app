@@ -1,6 +1,6 @@
 # 🏗️ System Architecture & Data Flow
 
-**[Version: v1.0_260210]**
+**[Version: v2.10_260211]**
 
 이 문서는 `aicc8_deploy_app`의 전체 시스템 구조와 데이터 흐름, 그리고 컴포넌트 간 상호작용을 시각적으로 상세히 기술합니다.
 
@@ -41,12 +41,14 @@ graph TD
 
 ### 2.1 Critical Data Journey Table
 
-| 변수명 (Variable)  | 생성 위치 (Origin)        | 변경/가공 로직 (Mutation)                        | 참조/최종 목적지 (Destination)      | 비고 (Note)                                                |
-| :----------------- | :------------------------ | :----------------------------------------------- | :---------------------------------- | :--------------------------------------------------------- |
-| **userId (`sub`)** | `GoogleLogin` (Auth)      | `jwtDecode` -> `authSlice` (Redux State)         | `ItemPanel.jsx` (API Request Param) | **[Core]** 모든 데이터 조회/생성의 기준 키 (Isolation Key) |
-| **isSidebarOpen**  | `Navbar.jsx` (State)      | `toggleSidebar` (Click), `Resize` (Window Event) | `nav` className (CSS Visibility)    | 모바일/태블릿 반응형 토글 제어                             |
-| **getTasksData**   | `apiSlice` (Redux)        | `fetchGetItem` (Async API Call)                  | `ItemPanel.jsx` (Rendering List)    | `null` 상태에 대한 방어 로직(Safe Guard) 필수              |
-| **filteredTasks**  | `ItemPanel.jsx` (Derived) | `filter(isCompleted)` -> `filter(isImportant)`   | `Item.jsx` (Map Render)             | 렌더링 직전의 최종 가공 데이터                             |
+| 변수명 (Variable)       | 생성 위치 (Origin)        | 변경/가공 로직 (Mutation)                         | 참조/최종 목적지 (Destination)      | 비고 (Note)                                                |
+| :---------------------- | :------------------------ | :------------------------------------------------ | :---------------------------------- | :--------------------------------------------------------- |
+| **userId (`sub`)**      | `GoogleLogin` (Auth)      | `jwtDecode` -> `authSlice` (Redux State)          | `ItemPanel.jsx` (API Request Param) | **[Core]** 모든 데이터 조회/생성의 기준 키 (Isolation Key) |
+| **isSidebarOpen**       | `Navbar.jsx` (State)      | `toggleSidebar` (Click), `Resize` (Window Event)  | `nav` className (CSS Visibility)    | 모바일/태블릿 반응형 토글 제어                             |
+| **getTasksData**        | `apiSlice` (Redux)        | `fetchGetItem` (Async API Call)                   | `ItemPanel.jsx` (Rendering List)    | `null` 상태에 대한 방어 로직(Safe Guard) 필수              |
+| **filteredTasks**       | `ItemPanel.jsx` (Derived) | `filter(isCompleted)` -> `filter(isImportant)`    | `Item.jsx` (Map Render)             | 렌더링 직전의 최종 가공 데이터                             |
+| **isLogoutConfirmOpen** | `Navbar.jsx` (State)      | `handleLogoutClick` (Trigger) -> `confirm/cancel` | `Logout Modal` (Conditional Render) | **[Safety]** 오터치 방지 로그아웃 컨펌 창                  |
+| **isTodayOpen**         | `Navbar.jsx` (State)      | `setIsTodayOpen` (Toggle)                         | `Today's Todo` (Collapsible)        | 사이드바 내 섹션 접힘/펼침 상태 저장                       |
 
 ---
 
@@ -114,6 +116,14 @@ sequenceDiagram
     FE->>FE: Update Redux Store (getItemData)
     FE->>FE: Apply Filters (Completed/Important)
     FE-->>User: Render Task List (ItemPanel)
+
+    Note over User, FE: 4. Safe Logout Phase (New)
+    User->>FE: Click Logout Button
+    FE->>FE: Set isLogoutConfirmOpen(true)
+    FE-->>User: Show Dark Confirmation Modal
+    User->>FE: Click 'Logout' in Modal
+    FE->>FE: Dispatch Logout & Clear Auth State
+    FE-->>User: Redirect to Home (Auth Required)
 ```
 
 ---

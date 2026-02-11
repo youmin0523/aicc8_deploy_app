@@ -225,3 +225,17 @@ AICC 8 Deploy App의 Back-end API 명세서입니다.
   "msg": "Delete Task Error: [Error Message]"
 }
 ```
+
+---
+
+## 🚦 3. UI Event 연동 가이드 (UI Trigger Mapping)
+
+프론트엔드 UI 요소와 API 간의 연쇄 반응 정의입니다.
+
+| UI 요소 (Element)           | 액션 (Action)     | 트리거 API (Triggered API)     | 비고 (Note)                                           |
+| :-------------------------- | :---------------- | :----------------------------- | :---------------------------------------------------- |
+| **Navbar (Today/Tomorrow)** | 체크박스 클릭     | `PATCH /update_completed_task` | 팝업/사이드바 내에서 즉시 상태 변경                   |
+| **Navbar (Today/Tomorrow)** | 중요도(Dot) 클릭  | `PUT /update_task`             | `isImportant` 필드만 반전하여 전체 업데이트 요청      |
+| **Logout Button**           | 클릭 -> 모달 확인 | (Front-end Auth Logout)        | API 호출 없이 Redux State 초기화 및 로컬스토리지 청소 |
+| **Item Card**               | Detail/Edit 클릭  | (Modal State Open)             | 특정 `itemId`의 상세 정보를 모달에 주입               |
+| **Modal (AddItem)**         | '추가하기' 클릭   | `POST /post_task`              | 생성 성공 시 `GET /get_tasks` 자동 갱신(Re-fetch)     |
