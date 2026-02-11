@@ -2,7 +2,7 @@
 
 ## Revision History
 
-**[Current Revision: v2.1_260206]**
+**[Current Revision: v2.7_260211]**
 
 - **v1.0_260129**: Dashboard Layout & Sidebar Animation
   - [front/src/components/Common/Navbar.jsx]
@@ -39,6 +39,29 @@
   - [front/src/components/Common/Navbar.jsx]
     - 수정: 로고 Wrapper 중앙 정렬 (`justify-center`)
     - 수정: 메뉴 리스트 수직 중앙 정렬 (`mt-8` -> `my-auto`) 및 텍스트 왼쪽 정렬 유지
+
+- **v2.2_260211**: Login Button Alignment
+  - [front/src/components/Common/Navbar.jsx]
+    - 수정: 로그인 버튼 텍스트와 아이콘 중앙 정렬 (`justify-start` -> `justify-center`)
+    - 수정: 텍스트 중앙 정렬 (`text-left` -> `text-center`) 및 `flex-1` 제거로 컨텐츠 중앙 배치
+
+- **v2.3_260211**: Auto-Bullet Description
+  - [front/src/components/Common/Modal.jsx]
+    - 기능 추가: `Add Item` 모달 진입 시 Description 필드에 글머리 기호(`- `) 자동 초기화.
+    - 기능 추가: `Enter` 키 입력 시 자동으로 다음 줄에 글머리 기호(`\n- `) 삽입하는 핸들러 추가.
+  - [front/src/components/Common/Item.jsx]
+    - 스타일 수정: Description(`p`) 태그에 `whitespace-pre-line` 추가하여 줄바꿈 및 리스트 형식을 화면에 반영.
+
+- **v2.4_260211**: UI Uniformity (Height Sync)
+  - [front/src/components/Common/AddItem.jsx]: `AddItem` 카드의 높이 설정을 `Item.jsx`와 동일하게 `h-auto min-h-[25vh]`로 변경.
+  - 효과: `flex-wrap` 레이아웃에서 같은 행에 있는 아이템의 높이가 늘어날 경우, `AddItem` 카드도 동일한 높이로 자동 조절됨(Stretch).
+
+- **v2.6_260211**: Preventing Layout Shift (CLS)
+  - [front/src/components/Common/Item.jsx]: `Completed` 및 `InCompleted` 버튼에 고정 너비(`w-24`)와 중앙 정렬(`text-center`) 적용.
+  - 효과: 버튼의 텍스트 길이가 변해도(11자 -> 9자) 너비가 유지되므로, 좁은 화면에서의 줄바꿈 상태가 일정하게 유지됨.
+
+- **v2.7_260211**: Rebranding (MARSHALL -> YOUMINSU)
+  - [front/src/components/Common/Navbar.jsx]: 브랜드 로고 텍스트를 `MARSHALL`에서 `YOUMINSU`로 변경. (모바일 헤더, 데스크탑 사이드바 모두 적용)
 
 ---
 
