@@ -1,976 +1,492 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   MdMenu,
   MdClose,
-  MdLogin,
   MdLogout,
   MdPerson,
   MdKeyboardDoubleArrowLeft,
   MdKeyboardDoubleArrowRight,
   MdKeyboardArrowDown,
-  MdKeyboardArrowUp,
-  MdCalendarToday,
-  MdUpcoming,
+  MdToday,
+  MdNextPlan,
+  MdBolt,
 } from 'react-icons/md';
 import { Link, useLocation } from 'react-router-dom';
-import { navMenus } from '../../utils/naviList';
-import { FcGoogle } from 'react-icons/fc';
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from 'jwt-decode';
 import { useDispatch, useSelector } from 'react-redux';
+import { useGoogleLogin } from '@react-oauth/google';
+import { toast } from 'react-toastify';
+
+import { navMenus } from '../../utils/naviList';
 import { login, logout } from '../../redux/slices/authSlice';
 import {
   fetchUpdateCompleted,
   fetchGetItem,
-  fetchPutTaskItem,
 } from '../../redux/slices/apiSlice';
-import { openModal } from '../../redux/slices/modalSlice';
-import { toast } from 'react-toastify';
+import {
+  openModal,
+  toggleSidebar,
+  setSidebar,
+} from '../../redux/slices/modalSlice';
 
-// //* 개인적으로 정리해볼 것
+// //* [Mentor's Encyclopedia: Identity Synchronization (V1 - UI Refinement)]
+// //* 1. 심볼 아이덴티티 단일화: // //* [No Duplicate Identity] 데스크탑/태블릿에서 상단 바의 로고를 숨기고 사이드바 로고만 노출하여 시각적 중복을 제거했습니다(v3.35).
+// //* 2. 전역 앵커 시스템: // //* [Global Floating Orbs] Neon Orbs는 어떤 브라우저 사이즈에서도 '우측 상단'에 고정되어 업무 인사이트를 제공합니다.
+// //* 3. 구현 원리:
+// //*    - // //* [Responsive Header] md 이상에서는 상단 바의 배경과 로고를 제거하여 사이드바와 자연스럽게 융합되도록 설계했습니다.
+
+const TodoList = ({ tasks, onDetail, onComplete }) => {
+  if (!tasks || tasks.length === 0)
+    return (
+      <div className="text-center text-gray-700 text-[10px] py-4 italic font-bold uppercase tracking-widest">
+        No Pending Tasks
+      </div>
+    );
+
+  return (
+    <ul className="flex flex-col gap-2.5 pr-1 custom-scrollbar overflow-y-auto max-h-[190px]">
+      {tasks.map((task) => (
+        <li
+          key={task._id}
+          onClick={() => onDetail(task)}
+          className="group flex items-center justify-between p-3.5 rounded-2xl bg-black/30 hover:bg-black/50 transition-all cursor-pointer border border-white/5 hover:border-blue-500/30 shadow-sm"
+        >
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${task.isimportant ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-gray-800'}`}
+            ></div>
+            <span className="truncate text-gray-400 text-[11px] group-hover:text-gray-100 font-bold tracking-tight lowercase">
+              {task.title}
+            </span>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onComplete(task);
+            }}
+            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-xl bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition-all shadow-inner"
+          >
+            <MdBolt size={13} />
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+const TodoPopup = ({
+  title,
+  tasks,
+  onClose,
+  onDetail,
+  onComplete,
+  onMouseEnter,
+  onMouseLeave,
+}) => (
+  <div
+    className="fixed top-24 right-6 z-[10000] animate-in slide-in-from-top-4 fade-in duration-400 pointer-events-auto"
+    onMouseEnter={onMouseEnter}
+    onMouseLeave={onMouseLeave}
+  >
+    <div className="absolute -top-6 left-0 w-full h-8 bg-transparent" />
+
+    <div className="bg-[#12161d]/98 backdrop-blur-3xl border border-white/10 w-[320px] md:w-[420px] rounded-[3rem] shadow-[0_60px_120px_-20px_rgba(0,0,0,1)] overflow-hidden border-t-blue-500/50">
+      <header className="px-8 py-7 border-b border-white/5 flex justify-between items-center bg-black/40">
+        <div className="flex items-center gap-4">
+          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.8)]"></div>
+          <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-gray-100">
+            {title}
+          </h3>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-2.5 rounded-full hover:bg-white/5 text-gray-500 hover:text-white transition-all"
+        >
+          <MdClose size={24} />
+        </button>
+      </header>
+      <div className="p-6 max-h-[45vh] overflow-y-auto custom-scrollbar">
+        {tasks?.length > 0 ? (
+          <div className="flex flex-col gap-3">
+            {tasks.map((task) => (
+              <div
+                key={task._id}
+                onClick={() => {
+                  onDetail(task);
+                  onClose();
+                }}
+                className="w-full p-4.5 rounded-3xl bg-black/40 hover:bg-blue-600/10 border border-transparent hover:border-blue-500/30 transition-all cursor-pointer group flex items-center justify-between shadow-sm"
+              >
+                <div className="flex flex-col min-w-0 pr-4">
+                  <span className="text-[13px] font-bold text-gray-300 group-hover:text-white truncate">
+                    {task.title}
+                  </span>
+                  <span className="text-[9px] text-gray-600 mt-1.5 uppercase font-black tracking-tighter">
+                    Command Unit ACTIVE
+                  </span>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onComplete(task);
+                  }}
+                  className="shrink-0 p-2.5 rounded-2xl bg-white/5 hover:bg-emerald-600 text-gray-400 hover:text-white transition-all"
+                >
+                  <MdBolt size={18} />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-16 text-center">
+            <div className="text-gray-200/10 mb-4 flex justify-center">
+              <MdBolt size={40} />
+            </div>
+            <div className="text-gray-700 font-bold uppercase tracking-[0.3em] text-[9px]">
+              Zero Tasks / Mission Clear
+            </div>
+          </div>
+        )}
+      </div>
+      <footer className="p-6 bg-black/30 text-center border-t border-white/5">
+        <button
+          onClick={onClose}
+          className="text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-blue-500 transition-colors"
+        >
+          Terminate Visual
+        </button>
+      </footer>
+    </div>
+  </div>
+);
+
+const NeonOrb = ({ count, icon, color, mini, onTrigger, onLeave }) => {
+  const styles = {
+    red: 'from-rose-500 to-red-900 shadow-[0_0_20px_rgba(244,63,94,0.3)] hover:shadow-[0_0_40px_rgba(244,63,94,0.6)] border-rose-500/40',
+    blue: 'from-cyan-400 to-blue-800 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_40px_rgba(6,182,212,0.6)] border-cyan-400/40',
+  }[color];
+
+  return (
+    <div
+      className="flex flex-col items-center gap-2"
+      onMouseEnter={() => onTrigger(false)}
+      onMouseLeave={onLeave}
+    >
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onTrigger(true);
+        }}
+        className={`group relative rounded-full flex items-center justify-center transition-all duration-500 hover:scale-110 active:scale-95 border-b-[3px] border-r-[3px]
+        ${mini ? 'w-10 h-10' : 'w-16 h-16 md:w-14 md:h-14 lg:w-16 lg:h-16'} bg-gradient-to-br ${styles}`}
+      >
+        <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_35%_35%,rgba(255,255,255,0.4),transparent)] opacity-40"></div>
+        <div
+          className={`${mini ? 'text-lg' : 'text-2xl'} text-white relative z-10 ${count > 0 && 'animate-pulse'}`}
+        >
+          {icon}
+        </div>
+        <div
+          className={`absolute -top-1 -right-1 rounded-full bg-white text-black font-black flex items-center justify-center shadow-lg border-2 border-black/10 transition-all
+          ${mini ? 'w-4 h-4 text-[7px]' : 'w-6 h-6 text-[10px]'}`}
+        >
+          {count}
+        </div>
+      </button>
+    </div>
+  );
+};
+
 const Navbar = () => {
-  const path = useLocation();
-  const isActive = (location) => path.pathname === location;
-
-  const googleClientId = import.meta.env.VITE_AUTH_CLIENT_ID;
-
   const dispatch = useDispatch();
-  const state = useSelector((state) => state.auth.authData);
-  // //! [Original Code] name만 추출
-  // const { name } = state || {};
+  const path = useLocation();
+  const isActive = (to) => path.pathname === to;
 
-  // //* [Modified Code] 프로필 이미지(picture)도 함께 추출하여 사이드바 UI에 반영
-  const { name, picture } = state || {};
-
-  //  !: 부정 !!name: name 값이 있는지 엄격히 체크 -> name이 존재하면 true, null이면 false
-  const [isAuth, setIsAuth] = useState(!!name);
-
-  // //* [Added Code] Today's Todo Logic
-  // 오늘 날짜의 미완료 항목 필터링하여 사이드바에 표시하기 위한 데이터 준비
-  // isCompleted가 false인 항목만 추출하여 todaysTasks에 저장
+  const authState = useSelector((state) => state.auth.authData);
   const tasks = useSelector((state) => state.api.getItemData);
-  const today = new Date().toISOString().split('T')[0];
-  const todaysTasks = tasks?.filter(
-    (task) => task.date === today && !task.iscompleted,
-  );
+  const isSidebarOpen = useSelector((state) => state.modal.isSidebarOpen);
 
-  // //* [Added Code] Tomorrow's Todo Logic
-  // 내일 날짜 계산 및 내일의 미완료 항목 필터링
-  const tomorrowDate = new Date();
-  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-  const tomorrow = tomorrowDate.toISOString().split('T')[0];
-  const tomorrowsTasks = tasks?.filter(
-    (task) => task.date === tomorrow && !task.iscompleted,
-  );
+  const [isDesktopOpen, setIsDesktopOpen] = useState(true);
+  const [activeOrb, setActiveOrb] = useState(null);
+  const hoverTimer = useRef(null);
 
-  // //* [Added Code] Collapsible State for Todo Sections
-  // Today's Todo와 Tomorrow's Todo 섹션의 접힘/펼침 상태를 관리하는 State.
-  // 기본값은 true(펼침)로 설정.
-  const [isTodayOpen, setIsTodayOpen] = useState(true);
-  const [isTomorrowOpen, setIsTomorrowOpen] = useState(true);
-
-  // //* [Added Code] Interactive Handlers for Today's Todo
-  // Todo 항목을 직접 완료 처리하는 핸들러. 체크박스 클릭 시 호출됨.
-  // 부모 요소로의 이벤트 전파를 막고(stopPropagation), 즉시 완료 상태(isCompleted: true)로 업데이트 요청 전송.
-  const handleToggleCompleted = async (e, task) => {
-    e.stopPropagation(); // 부모 클릭 이벤트 전파 방지
-    const updateData = {
-      itemId: task._id,
-      isCompleted: true, // 바로 완료 처리
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1280) setIsDesktopOpen(false);
+      else setIsDesktopOpen(true);
+      if (window.innerWidth >= 768) dispatch(setSidebar(false));
     };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [dispatch]);
 
+  const getToday = () => new Date().toISOString().split('T')[0];
+  const todaysTasks = tasks?.filter(
+    (t) => t.date === getToday() && !t.iscompleted,
+  );
+  const tomorrowsTasks = tasks?.filter(
+    (t) => t.date !== getToday() && !t.iscompleted,
+  );
+
+  const handleOrbTrigger = (type, isClick = false) => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    setActiveOrb((prev) => {
+      if (isClick && prev === type) return null;
+      return type;
+    });
+  };
+
+  const handleOrbLeave = () => {
+    hoverTimer.current = setTimeout(() => {
+      setActiveOrb(null);
+    }, 450);
+  };
+
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: async (res) => {
+      const info = await fetch(
+        'https://www.googleapis.com/oauth2/v3/userinfo',
+        {
+          headers: { Authorization: `Bearer ${res.access_token}` },
+        },
+      ).then((r) => r.json());
+      dispatch(login({ authData: info }));
+      if (info.sub) dispatch(fetchGetItem(info.sub));
+    },
+  });
+
+  const handleGlobalComplete = async (task) => {
     try {
       await dispatch(
         fetchUpdateCompleted({
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updateData),
+          body: JSON.stringify({ itemId: task._id, isCompleted: true }),
         }),
       ).unwrap();
-      toast.success('할 일이 완료되었습니다.');
-      await dispatch(fetchGetItem(state.sub)).unwrap();
-    } catch (error) {
-      toast.error('상태 업데이트 실패');
-    }
-  };
-
-  // //* [Added Code] Toggle Important Status
-  // 중요 상태 토글 핸들러. Red Dot 또는 Outline Circle 클릭 시 호출됨.
-  // [Fix] API Payload 최적화: 불필요한 필드를 제외하고 필요한 필드만 명시적으로 전송하여 에러 방지.
-  const handleToggleImportant = async (e, task) => {
-    e.stopPropagation();
-    const updateData = {
-      _id: task._id,
-      title: task.title,
-      description: task.description,
-      date: task.date,
-      isCompleted: task.iscompleted,
-      isImportant: !task.isimportant,
-    };
-
-    try {
-      await dispatch(fetchPutTaskItem(updateData)).unwrap();
-      await dispatch(fetchGetItem(state.sub)).unwrap();
-    } catch (error) {
-      toast.error('중요 표시 변경 실패');
-    }
-  };
-
-  // //* [Added Code] Open Detail Modal
-  // 항목 클릭 시 상세 정보 모달을 'details' 타입으로 오픈.
-  const handleOpenDetail = (task) => {
-    dispatch(openModal({ modalType: 'details', task }));
-  };
-
-  // //* [Modified Code] 사이드바 토글 상태 관리 (모바일/태블릿용)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  // //* [Modified Code] 우측 상단 로그인 팝오버 상태 관리
-  const [isLoginPopoverOpen, setIsLoginPopoverOpen] = useState(false);
-
-  // //* [Modified Code] 데스크탑 사이드바 토글 상태 관리
-  const [isDesktopOpen, setIsDesktopOpen] = useState(true);
-
-  // //* [Modified Code] 화면 크기 변경 감지 (Resize Handler)
-  // 모바일에서 메뉴를 열어둔 채 브라우저를 넓혔을 때,
-  // 1. 데스크탑 모드로 전환되면서 사이드바가 자동으로 '항상 보임' 처리됨
-  // 2. 이때 불필요하게 남아있을 수 있는 '열림 상태(isSidebarOpen=true)'를 false로 초기화하여 오버레이 제거 등 오동작 방지
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsSidebarOpen(false);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-    if (isLoginPopoverOpen) setIsLoginPopoverOpen(false); // 사이드바 열 때 팝오버 닫기
-  };
-
-  const toggleLoginPopover = () => {
-    setIsLoginPopoverOpen(!isLoginPopoverOpen);
-    if (isSidebarOpen) setIsSidebarOpen(false); // 팝오버 열 때 사이드바 닫기
-  };
-
-  const handleLoginSuccess = useCallback(
-    (credentialResponse) => {
-      console.log(credentialResponse);
-      try {
-        const decoded = jwtDecode(credentialResponse.credential);
-        dispatch(login({ authData: decoded }));
-        setIsAuth(true);
-      } catch (error) {
-        console.error('Google Login Error: ', error);
-      }
-    },
-    [dispatch],
-  );
-
-  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
-
-  const handleLogoutClick = () => {
-    setIsLogoutConfirmOpen(true);
-  };
-
-  const confirmLogout = () => {
-    dispatch(logout());
-    setIsAuth(false);
-    setIsLogoutConfirmOpen(false);
-  };
-
-  const cancelLogout = () => {
-    setIsLogoutConfirmOpen(false);
-  };
-
-  const handleLoginError = (error) => {
-    console.log('Google Login Error: ', error);
-  };
-
-  // //* [Added Code] Mobile Header Todo Handlers
-  // 모바일 헤더의 투두 아이콘 클릭 시 사이드바를 열고 해당 섹션을 펼침
-  const handleHeaderTodoClick = (type) => {
-    setIsSidebarOpen(true);
-    if (type === 'today') {
-      setIsTodayOpen(true);
-    } else {
-      setIsTomorrowOpen(true);
+      dispatch(fetchGetItem(authState.sub));
+      toast.success('Protocol Executed');
+    } catch {
+      toast.error('Sync failed');
     }
   };
 
   return (
     <>
-      {
-        // //* Logout Confirmation Modal
-      }
-      {isLogoutConfirmOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-[#1e1e1e] border border-gray-700 rounded-xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100 opacity-100">
-            {
-              // //* Header
-            }
-            <div className="bg-gradient-to-r from-red-900/40 to-[#1e1e1e] px-6 py-4 border-b border-gray-700 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-red-900/30 flex items-center justify-center shrink-0">
-                <MdLogout className="w-5 h-5 text-red-400" />
-              </div>
-              <h3 className="text-lg font-bold text-white tracking-wide">
-                로그아웃 확인
-              </h3>
-            </div>
-
-            {/* Body */}
-            <div className="px-6 py-6 text-center">
-              <p className="text-gray-300 mb-2">정말 로그아웃 하시겠습니까?</p>
-              <p className="text-gray-500 text-sm">
-                로그아웃 후에는 다시 로그인해야 합니다.
-              </p>
-            </div>
-
-            {
-              // //* Footer / Actions
-            }
-            <div className="flex items-center gap-3 px-6 pb-6">
-              <button
-                onClick={cancelLogout}
-                className="flex-1 py-2.5 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors font-medium text-sm"
-              >
-                취소
-              </button>
-              <button
-                onClick={confirmLogout}
-                className="flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/30 transition-all transform hover:scale-[1.02] font-bold text-sm"
-              >
-                로그아웃
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {
-        // //* [Modified Code] 모바일/태블릿용 햄버거 메뉴 버튼
-        // 화면 좌측 상단에 고정되어 메뉴를 열 수 있는 트리거 역할
-      }
-      <header className="fixed top-0 left-0 w-full h-14 bg-[#212121] border-b border-gray-700 flex items-center justify-between px-4 z-40 lg:hidden">
-        {/* Left: Sidebar Toggle */}
-        <button onClick={toggleSidebar} className="text-white p-1">
-          <MdMenu className="w-7 h-7" />
-        </button>
-
-        {/* Center: Brand Logo */}
-        <div
-          className={`absolute left-1/2 transform -translate-x-1/2 flex items-center gap-4 transition-opacity duration-300 ${
-            isSidebarOpen ? 'opacity-0' : 'opacity-100'
-          }`}
-        >
-          <div className="logo shrink-0 scale-75"></div>
-          <h2 className="font-bold text-xl tracking-wider text-white">
-            <Link to="/">YOUMINSU</Link>
-          </h2>
-        </div>
-
-        {/* Right: Todos + Login/Profile Action */}
-        <div className="flex items-center gap-3 relative">
-          {
-            // //* [Added Code] Mobile Header Todo Indicators
-            // 모바일/태블릿에서 상단 네비게이션에 Today/Tomorrow 투두 상태 표시
-          }
-          <div
-            className={`flex items-center gap-3 mr-1 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+      {/* //* [Unified Global Header] md 이상에서는 로고와 배경을 제거하며, 사이드바 버튼 클릭 방해 방지를 위해 pointer-events 제어 */}
+      <header
+        className="fixed top-0 left-0 w-full h-20 flex items-center justify-between px-6 z-[1000] transition-all
+        bg-[#0d1117]/90 backdrop-blur-2xl border-b border-white/5 md:bg-transparent md:backdrop-blur-none md:border-none md:pointer-events-none"
+      >
+        {/* Mobile-Only Elements: Hamburger & Center Symbol */}
+        <div className="flex-1 flex items-center md:hidden pointer-events-auto">
+          <button
+            onClick={() => dispatch(toggleSidebar())}
+            className="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center hover:bg-white/10 transition-all border border-white/5 active:scale-90"
           >
-            {/* Today */}
-            <div
-              className="relative cursor-pointer group"
-              onClick={() => handleHeaderTodoClick('today')}
-            >
-              <MdCalendarToday className="w-6 h-6 text-gray-400 hover:text-red-400 transition-colors" />
-              {todaysTasks?.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full text-[10px] font-bold text-white flex items-center justify-center border border-[#212121]">
-                  {todaysTasks.length}
-                </span>
-              )}
+            {isSidebarOpen ? <MdClose size={26} /> : <MdMenu size={26} />}
+          </button>
+        </div>
 
-              {/* Mobile Header Hover Popup (Today) */}
-              <div
-                className="absolute top-full right-0 mt-4 w-72 bg-[#1e1e1e] border border-gray-700 rounded-xl shadow-2xl p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[9999] transform translate-y-2 group-hover:translate-y-0 origin-top-right cursor-default"
-                onClick={(e) => e.stopPropagation()} // Prevent sidebar opening when interacting with popup
-              >
-                <div className="flex items-center justify-between mb-3 border-b border-gray-700 pb-2">
-                  <h4 className="text-gray-200 font-bold text-sm tracking-wider flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
-                    Today's Tasks
-                  </h4>
-                  <span className="text-xs bg-red-500/20 text-red-400 border border-red-500/50 px-2 py-0.5 rounded-full font-mono">
-                    {todaysTasks?.length || 0}
-                  </span>
-                </div>
-                {todaysTasks?.length > 0 ? (
-                  <ul className="flex flex-col gap-2 max-h-[240px] overflow-y-auto custom-scrollbar pr-1">
-                    {todaysTasks.map((task) => (
-                      <li
-                        key={task._id}
-                        className="group/item flex items-center justify-between p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700 transition-all cursor-pointer border border-transparent hover:border-gray-600"
-                        onClick={() => handleOpenDetail(task)}
-                      >
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <div
-                            className="relative flex items-center justify-center w-4 h-4 rounded border border-gray-500 hover:border-teal-400 transition-colors shrink-0"
-                            onClick={(e) => handleToggleCompleted(e, task)}
-                          >
-                            <div className="w-2.5 h-2.5 bg-teal-400 rounded-sm opacity-0 hover:opacity-100 transition-opacity"></div>
-                          </div>
-                          <span className="truncate text-gray-300 text-sm group-hover/item:text-white font-medium">
-                            {task.title}
-                          </span>
-                        </div>
-                        <div
-                          onClick={(e) => handleToggleImportant(e, task)}
-                          className="w-6 h-6 flex items-center justify-center shrink-0 cursor-pointer hover:scale-110 transition-transform"
-                        >
-                          <div
-                            className={`w-2.5 h-2.5 rounded-full transition-all ${
-                              task.isimportant
-                                ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]'
-                                : 'bg-transparent border border-gray-500 hover:border-red-500'
-                            }`}
-                          ></div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="text-center text-gray-500 text-xs py-4">
-                    할 일이 없습니다.
-                  </div>
-                )}
-              </div>
-            </div>
+        <div className="md:hidden flex items-center gap-3 absolute left-1/2 -translate-x-1/2 pointer-events-none">
+          <div className="logo scale-75"></div>
+          <h1 className="text-white font-black italic text-base tracking-tighter uppercase whitespace-nowrap">
+            YOUMINSU
+          </h1>
+        </div>
 
-            {/* Tomorrow */}
-            <div
-              className="relative cursor-pointer group"
-              onClick={() => handleHeaderTodoClick('tomorrow')}
-            >
-              <MdUpcoming className="w-7 h-7 text-gray-400 hover:text-blue-400 transition-colors" />
-              {tomorrowsTasks?.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 rounded-full text-[10px] font-bold text-white flex items-center justify-center border border-[#212121]">
-                  {tomorrowsTasks.length}
-                </span>
-              )}
-
-              {/* Mobile Header Hover Popup (Tomorrow) */}
-              <div
-                className="absolute top-full right-0 mt-4 w-72 bg-[#1e1e1e] border border-gray-700 rounded-xl shadow-2xl p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[9999] transform translate-y-2 group-hover:translate-y-0 origin-top-right cursor-default"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between mb-3 border-b border-gray-700 pb-2">
-                  <h4 className="text-gray-200 font-bold text-sm tracking-wider flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span>
-                    Tomorrow's Tasks
-                  </h4>
-                  <span className="text-xs bg-blue-500/20 text-blue-400 border border-blue-500/50 px-2 py-0.5 rounded-full font-mono">
-                    {tomorrowsTasks?.length || 0}
-                  </span>
-                </div>
-                {tomorrowsTasks?.length > 0 ? (
-                  <ul className="flex flex-col gap-2 max-h-[240px] overflow-y-auto custom-scrollbar pr-1">
-                    {tomorrowsTasks.map((task) => (
-                      <li
-                        key={task._id}
-                        className="group/item flex items-center justify-between p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700 transition-all cursor-pointer border border-transparent hover:border-gray-600"
-                        onClick={() => handleOpenDetail(task)}
-                      >
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <div
-                            className="relative flex items-center justify-center w-4 h-4 rounded border border-gray-500 hover:border-blue-400 transition-colors shrink-0"
-                            onClick={(e) => handleToggleCompleted(e, task)}
-                          >
-                            <div className="w-2.5 h-2.5 bg-blue-400 rounded-sm opacity-0 hover:opacity-100 transition-opacity"></div>
-                          </div>
-                          <span className="truncate text-gray-300 text-sm group-hover/item:text-white font-medium">
-                            {task.title}
-                          </span>
-                        </div>
-                        <div
-                          onClick={(e) => handleToggleImportant(e, task)}
-                          className="w-6 h-6 flex items-center justify-center shrink-0 cursor-pointer hover:scale-110 transition-transform"
-                        >
-                          <div
-                            className={`w-2.5 h-2.5 rounded-full transition-all ${
-                              task.isimportant
-                                ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]'
-                                : 'bg-transparent border border-gray-500 hover:border-red-500'
-                            }`}
-                          ></div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="text-center text-gray-500 text-xs py-4">
-                    할 일이 없습니다.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Login/Profile Action */}
-          <div className="relative">
-            {isAuth ? (
-              <button
-                onClick={handleLogoutClick}
-                className="text-gray-300 hover:text-white p-1 flex items-center gap-1"
-              >
-                <MdLogout className="w-6 h-6" />
-              </button>
-            ) : (
-              <button
-                onClick={toggleLoginPopover}
-                className="text-gray-400 hover:text-white p-1"
-              >
-                <MdPerson className="w-7 h-7" />
-              </button>
-            )}
-
-            {/* Login Popover */}
-            {isLoginPopoverOpen && !isAuth && (
-              <div className="absolute top-10 right-0 bg-white p-4 rounded-md shadow-lg border border-gray-200 z-50 w-64 min-w-max">
-                <div className="text-gray-800 font-semibold mb-3 text-center text-sm">
-                  로그인이 필요합니다
-                </div>
-                <div className="flex justify-center">
-                  <GoogleOAuthProvider clientId={googleClientId}>
-                    <GoogleLogin
-                      onSuccess={(res) => {
-                        handleLoginSuccess(res);
-                        setIsLoginPopoverOpen(false);
-                      }}
-                      onError={handleLoginError}
-                    />
-                  </GoogleOAuthProvider>
-                </div>
-              </div>
-            )}
-          </div>
+        {/* //* [Right-Side Orbs] 항상 우측 상단에 고정 */}
+        <div className="flex-1 flex items-center justify-end gap-5 pointer-events-auto">
+          <NeonOrb
+            count={todaysTasks?.length || 0}
+            icon={<MdToday />}
+            color="red"
+            mini={true}
+            onTrigger={(isClick) => handleOrbTrigger('today', isClick)}
+            onLeave={handleOrbLeave}
+          />
+          <NeonOrb
+            count={tomorrowsTasks?.length || 0}
+            icon={<MdNextPlan />}
+            color="blue"
+            mini={true}
+            onTrigger={(isClick) => handleOrbTrigger('future', isClick)}
+            onLeave={handleOrbLeave}
+          />
         </div>
       </header>
 
-      {/* Popover Overlay */}
-      {(isLoginPopoverOpen || isSidebarOpen) && (
-        <div
-          onClick={() => {
-            setIsLoginPopoverOpen(false);
-            setIsSidebarOpen(false);
-          }}
-          className="fixed inset-0 bg-black bg-opacity-50 z-45 lg:hidden cursor-default"
-        ></div>
-      )}
-
-      {/* Spacer for Mobile Header */}
-      <div className="w-full h-14 lg:hidden"></div>
-
-      {
-        // //* [Modified Code] Sidebar (Mini Sidebar Architecture)
-        // //* [Modified Code] Responsive Logic: Full Sidebar OR Hidden
-        // 애매한 '아이콘만 남는 모드(Mini Sidebar)'를 제거함.
-        // Large Screen(lg): 항상 Full Sidebar (w-72)
-        // Small Screen: 기본적으로 Hidden -> 토글 시 Full Sidebar 등장
-        // //* [Restored & Refined Code] Responsive Sidebar Architecture
-        // Mobile: Off-Canvas (Hidden <-> w-64 Full)
-        // Desktop: Collapsible (w-[70px] Mini <-> w-72 Full)
-      }
+      {/* Main Sidebar */}
       <nav
-        className={`bg-[#212121] h-full rounded-r-sm border-r border-gray-500 flex flex-col justify-start items-center 
-        fixed top-0 left-0 z-50 py-4 px-4 lg:relative transition-all duration-300 ease-in-out
-        ${isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0'}
-        ${
-          isDesktopOpen
-            ? 'lg:w-72 lg:py-10 lg:px-6 overflow-y-auto custom-scrollbar'
-            : 'lg:w-[70px] lg:py-4 lg:px-2 overflow-visible'
-        }
-        `}
+        className={`bg-[#0d1117] h-full border-r border-white/5 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] shrink-0 z-50 flex flex-col
+        ${isSidebarOpen ? 'fixed top-0 left-0 translate-x-0 w-[320px] shadow-[50px_0_100px_rgba(0,0,0,0.5)] pt-12' : 'fixed md:relative top-0 left-0 -translate-x-full md:translate-x-0 pt-16'}
+        ${isDesktopOpen ? 'md:w-[320px] p-8 px-10' : 'md:w-[100px] px-3 py-8'}`}
       >
-        {/* Desktop Collapse Toggle (Only if Expanded) */}
-        {isDesktopOpen && (
-          <div className="w-full hidden lg:flex justify-end mb-4 absolute top-4 right-4">
-            <button
-              onClick={() => setIsDesktopOpen(false)}
-              className="text-gray-400 hover:text-white transition-colors"
-              title="Collapse Sidebar"
-            >
-              <MdKeyboardDoubleArrowLeft className="w-6 h-6" />
-            </button>
-          </div>
-        )}
-
-        {/* MObile Close Button */}
         <button
-          onClick={() => setIsSidebarOpen(false)}
-          className="lg:hidden absolute top-4 right-4 text-gray-400 hover:text-white z-50"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsDesktopOpen(!isDesktopOpen);
+          }}
+          className="absolute top-24 -right-3.5 w-7 h-7 bg-blue-600 rounded-full hidden md:flex items-center justify-center text-white hover:scale-110 active:scale-90 transition-all shadow-[0_0_20px_rgba(37,99,235,0.5)] z-[2000] border-2 border-[#0d1117] cursor-pointer"
         >
-          <MdKeyboardDoubleArrowLeft className="w-6 h-6" />
+          {isDesktopOpen ? (
+            <MdKeyboardDoubleArrowLeft size={18} />
+          ) : (
+            <MdKeyboardDoubleArrowRight size={18} />
+          )}
         </button>
 
-        {
-          // //* [Modified Code] Absolute Position for Logo
-          // 상단 고정 위치 지정
-          // //* 항상 Full Mode로 표시
-          // //* Desktop: Collapsed 상태일 때 클릭하면 확장되도록 로직 복구
-        }
+        {/* 사이드바 메인 로고 섹션 (md 이상에서만 아이덴티티 주도) */}
         <div
-          className={`logo-wrapper flex w-full items-center gap-4 transition-all duration-300 z-10 shrink-0 
-            justify-center py-6 
-            ${isDesktopOpen ? 'lg:py-6' : 'lg:w-full lg:px-0 lg:cursor-pointer lg:hover:bg-gray-800 lg:py-4 lg:absolute lg:top-10 lg:left-0'}`}
-          onClick={() => !isDesktopOpen && setIsDesktopOpen(true)}
-          title={!isDesktopOpen ? 'Click to Expand' : ''}
+          className={`flex flex-col mb-12 transition-all ${!isDesktopOpen && 'md:items-center'}`}
         >
-          <div className="w-[50px] h-[30px] relative shrink-0">
-            <div className="logo"></div>
-          </div>
-          <h2
-            className={`font-semibold text-xl whitespace-nowrap transition-opacity duration-300 block opacity-100 
-              ${isDesktopOpen ? '' : 'lg:opacity-0 lg:hidden'}`}
-          >
-            <Link to="/">YOUMINSU</Link>
-          </h2>
-        </div>
-
-        {
-          // //* [Modified Code] Flexbox Vertical Layout Structure
-          // 기존의 Absolute Positioning을 제거하고, 전체를 Flex Column으로 감싸서
-          // 화면 높이가 줄어들어도 요소들이 겹치지 않고 자연스럽게 스택되거나 스크롤되도록 변경함.
-          // 로고와의 간격을 넓히기 위해 pt-[60px] -> pt-[100px]로 변경.
-          // //* Collapsed 모드 대비 상단 여백 동적 조정
-        }
-        <div
-          className={`flex flex-col w-full h-full pb-6 gap-4 pt-2 ${isDesktopOpen ? 'lg:pt-2' : 'lg:pt-[100px]'}`}
-        >
-          {/* 1. Menu List (Fixed Height / Shrink-0) */}
-          <div className="w-full shrink-0">
-            <ul className="menus w-full flex flex-col gap-1">
-              {navMenus.map((menu, idx) => (
-                <li
-                  key={idx}
-                  className={`rounded-sm mb-1 border border-gray-700 hover:bg-gray-950 transition-all duration-300 ${
-                    isActive(menu.to)
-                      ? 'bg-gray-950 border-gray-500'
-                      : 'border-transparent'
-                  }`}
-                >
-                  <Link
-                    to={menu.to}
-                    className={`group/link flex items-center py-3 transition-all duration-300 relative px-4 gap-x-4 justify-start 
-                      ${isDesktopOpen ? '' : 'lg:px-0 lg:justify-center lg:w-full'}`}
-                  >
-                    <div className="text-xl flex items-center justify-center relative">
-                      {menu.icon}
-                      {/* Hover Tooltip for Collapsed Mode (Desktop Only) */}
-                      {!isDesktopOpen && (
-                        <div className="hidden lg:block absolute left-full top-1/2 -translate-y-1/2 ml-4 px-3 py-1.5 bg-[#1e1e1e] border border-gray-700 text-gray-200 text-sm font-medium rounded-md shadow-xl opacity-0 invisible group-hover/link:opacity-100 group-hover/link:visible transition-all duration-200 whitespace-nowrap z-[9999] origin-left scale-95 group-hover/link:scale-100">
-                          {menu.label}
-                          <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-[#1e1e1e] border-l border-b border-gray-700 transform rotate-45"></div>
-                        </div>
-                      )}
-                    </div>
-                    <span
-                      className={`whitespace-nowrap transition-all duration-300 block opacity-100 
-                        ${isDesktopOpen ? '' : 'lg:opacity-0 lg:hidden lg:w-0'}`}
-                    >
-                      {menu.label}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* 2. Flexible Todo Area (Takes remaining space) */}
-          <div
-            className={`flex flex-col gap-2 w-full flex-1 min-h-[300px] overflow-hidden 
-              ${isDesktopOpen ? '' : 'lg:flex-none lg:my-4 lg:min-h-0 lg:overflow-visible'}`}
-          >
-            {/* Today's Todo Section */}
-            <div
-              className={`flex flex-col w-full transition-all duration-300 flex-1 min-h-0 overflow-hidden px-6 
-                ${isDesktopOpen ? 'lg:px-6' : 'lg:flex-none lg:shrink-0 lg:h-auto lg:items-center lg:overflow-visible lg:px-0'}`}
-            >
-              {/* Full List View (Visible on Mobile, Hidden on Desktop Collapse) */}
-              <div
-                className={`todays-todo w-full h-full flex flex-col ${!isDesktopOpen ? 'lg:hidden' : ''}`}
-              >
-                <div
-                  className="flex items-center justify-between mb-2 cursor-pointer hover:bg-gray-800 p-1 rounded-md transition-colors shrink-0"
-                  onClick={() => setIsTodayOpen(!isTodayOpen)}
-                >
-                  <div className="flex items-center gap-2">
-                    {isTodayOpen ? (
-                      <MdKeyboardArrowDown className="text-gray-400" />
-                    ) : (
-                      <MdKeyboardArrowUp className="text-gray-400" />
-                    )}
-                    <h3 className="text-gray-400 text-sm font-bold uppercase tracking-widest">
-                      Today's Todo
-                    </h3>
-                  </div>
-                  <span className="text-xs bg-red-500 text-white font-bold px-2 py-0.5 rounded-md shadow-md shadow-red-900/50">
-                    {todaysTasks?.length || 0}
-                  </span>
-                </div>
-                {isTodayOpen && (
-                  <ul className="flex flex-col gap-3 flex-1 overflow-y-auto pr-1 custom-scrollbar">
-                    {todaysTasks?.map((task) => (
-                      <li
-                        key={task._id}
-                        className="group flex items-center justify-between p-2 rounded-md bg-gray-800 hover:bg-gray-700 transition-all cursor-pointer border border-transparent hover:border-gray-600 shrink-0"
-                        onClick={() => handleOpenDetail(task)}
-                      >
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <div
-                            className="relative flex items-center justify-center w-5 h-5 rounded-md border-2 border-gray-500 hover:border-teal-400 transition-colors shrink-0"
-                            onClick={(e) => handleToggleCompleted(e, task)}
-                          >
-                            <div className="w-3 h-3 bg-teal-400 rounded-sm opacity-0 hover:opacity-100 transition-opacity"></div>
-                          </div>
-                          <span className="truncate text-gray-300 text-sm group-hover:text-white font-medium transition-colors">
-                            {task.title}
-                          </span>
-                        </div>
-                        <div
-                          onClick={(e) => handleToggleImportant(e, task)}
-                          className="w-8 h-8 flex items-center justify-center shrink-0 cursor-pointer group/indicator"
-                        >
-                          <div
-                            className={`w-3 h-3 rounded-full transition-all ${
-                              task.isimportant
-                                ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] group-hover/indicator:scale-125'
-                                : 'bg-transparent border-2 border-gray-600 group-hover/indicator:border-red-500'
-                            }`}
-                            title={
-                              task.isimportant
-                                ? 'Click to Unmark Important'
-                                : 'Click to Mark as Important'
-                            }
-                          ></div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              {/* Orb View (Hidden on Mobile, Visible on Desktop Collapse) */}
-              {!isDesktopOpen && (
-                <div className="hidden lg:flex relative group items-center justify-center py-2 z-50">
-                  <div
-                    className="w-10 h-10 rounded-full bg-gray-800/80 border border-red-500/50 flex items-center justify-center shadow-[0_0_12px_rgba(239,68,68,0.4)] group-hover:shadow-[0_0_20px_rgba(239,68,68,0.6)] transition-all backdrop-blur-sm group-hover:scale-110 cursor-pointer relative"
-                    onClick={() => setIsDesktopOpen(true)}
-                  >
-                    <MdCalendarToday className="text-red-400 w-5 h-5" />
-                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 border-2 border-[#1e1e1e] text-[10px] font-bold text-white shadow-sm">
-                      {todaysTasks?.length || 0}
-                    </span>
-                  </div>
-                  {/* Orb Popup */}
-                  <div className="absolute left-full top-0 ml-4 w-80 bg-[#1e1e1e] border border-gray-700 rounded-xl shadow-2xl p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[9999] transform -translate-x-4 group-hover:translate-x-0 origin-left">
-                    <div className="flex items-center justify-between mb-3 border-b border-gray-700 pb-2">
-                      <h4 className="text-gray-200 font-bold text-sm tracking-wider flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
-                        Today's Tasks
-                      </h4>
-                      <span className="text-xs bg-red-500/20 text-red-400 border border-red-500/50 px-2 py-0.5 rounded-full font-mono">
-                        {todaysTasks?.length || 0}
-                      </span>
-                    </div>
-                    {todaysTasks?.length > 0 ? (
-                      <ul className="flex flex-col gap-2 max-h-[240px] overflow-y-auto custom-scrollbar pr-1">
-                        {todaysTasks.map((task) => (
-                          <li
-                            key={task._id}
-                            className="group/item flex items-center justify-between p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700 transition-all cursor-pointer border border-transparent hover:border-gray-600"
-                            onClick={() => handleOpenDetail(task)}
-                          >
-                            <div className="flex items-center gap-3 overflow-hidden">
-                              <div
-                                className="relative flex items-center justify-center w-4 h-4 rounded border border-gray-500 hover:border-teal-400 transition-colors shrink-0"
-                                onClick={(e) => handleToggleCompleted(e, task)}
-                              >
-                                <div className="w-2.5 h-2.5 bg-teal-400 rounded-sm opacity-0 hover:opacity-100 transition-opacity"></div>
-                              </div>
-                              <span className="truncate text-gray-300 text-sm group-hover/item:text-white font-medium">
-                                {task.title}
-                              </span>
-                            </div>
-                            <div
-                              onClick={(e) => handleToggleImportant(e, task)}
-                              className="w-6 h-6 flex items-center justify-center shrink-0 cursor-pointer hover:scale-110 transition-transform"
-                            >
-                              <div
-                                className={`w-2.5 h-2.5 rounded-full transition-all ${
-                                  task.isimportant
-                                    ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]'
-                                    : 'bg-transparent border border-gray-500 hover:border-red-500'
-                                }`}
-                              ></div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="text-center text-gray-500 text-xs py-4">
-                        할 일이 없습니다.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Tomorrow's Todo Section */}
-            <div
-              className={`flex flex-col w-full transition-all duration-300 flex-1 min-h-0 overflow-hidden px-6 
-                ${isDesktopOpen ? 'lg:px-6' : 'lg:flex-none lg:shrink-0 lg:h-auto lg:items-center lg:overflow-visible lg:px-0'}`}
-            >
-              {/* Full List View */}
-              <div
-                className={`tomorrows-todo w-full h-full flex flex-col ${!isDesktopOpen ? 'lg:hidden' : ''}`}
-              >
-                <div
-                  className="flex items-center justify-between mb-2 cursor-pointer hover:bg-gray-800 p-1 rounded-md transition-colors shrink-0"
-                  onClick={() => setIsTomorrowOpen(!isTomorrowOpen)}
-                >
-                  <div className="flex items-center gap-2">
-                    {isTomorrowOpen ? (
-                      <MdKeyboardArrowDown className="text-gray-400" />
-                    ) : (
-                      <MdKeyboardArrowUp className="text-gray-400" />
-                    )}
-                    <h3 className="text-gray-400 text-sm font-bold uppercase tracking-widest">
-                      Tomorrow's Todo
-                    </h3>
-                  </div>
-                  <span className="text-xs bg-blue-500 text-white font-bold px-2 py-0.5 rounded-md shadow-md shadow-blue-900/50">
-                    {tomorrowsTasks?.length || 0}
-                  </span>
-                </div>
-                {isTomorrowOpen && (
-                  <ul className="flex flex-col gap-3 flex-1 overflow-y-auto pr-1 custom-scrollbar">
-                    {tomorrowsTasks?.map((task) => (
-                      <li
-                        key={task._id}
-                        className="group flex items-center justify-between p-2 rounded-md bg-gray-800 hover:bg-gray-700 transition-all cursor-pointer border border-transparent hover:border-gray-600 shrink-0"
-                        onClick={() => handleOpenDetail(task)}
-                      >
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <div
-                            className="relative flex items-center justify-center w-5 h-5 rounded-md border-2 border-gray-500 hover:border-blue-400 transition-colors shrink-0"
-                            onClick={(e) => handleToggleCompleted(e, task)}
-                          >
-                            <div className="w-3 h-3 bg-blue-400 rounded-sm opacity-0 hover:opacity-100 transition-opacity"></div>
-                          </div>
-                          <span className="truncate text-gray-300 text-sm group-hover:text-white font-medium transition-colors">
-                            {task.title}
-                          </span>
-                        </div>
-                        <div
-                          onClick={(e) => handleToggleImportant(e, task)}
-                          className="w-8 h-8 flex items-center justify-center shrink-0 cursor-pointer group/indicator"
-                        >
-                          <div
-                            className={`w-3 h-3 rounded-full transition-all ${
-                              task.isimportant
-                                ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] group-hover/indicator:scale-125'
-                                : 'bg-transparent border-2 border-gray-600 group-hover/indicator:border-red-500'
-                            }`}
-                            title={
-                              task.isimportant
-                                ? 'Click to Unmark Important'
-                                : 'Click to Mark as Important'
-                            }
-                          ></div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              {/* Orb View */}
-              {!isDesktopOpen && (
-                <div className="hidden lg:flex relative group items-center justify-center py-2 z-40">
-                  <div
-                    className="w-10 h-10 rounded-full bg-gray-800/80 border border-blue-500/50 flex items-center justify-center shadow-[0_0_12px_rgba(59,130,246,0.4)] group-hover:shadow-[0_0_20px_rgba(59,130,246,0.6)] transition-all backdrop-blur-sm group-hover:scale-110 cursor-pointer relative"
-                    onClick={() => setIsDesktopOpen(true)}
-                  >
-                    <MdUpcoming className="text-blue-400 w-6 h-6" />
-                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 border-2 border-[#1e1e1e] text-[10px] font-bold text-white shadow-sm">
-                      {tomorrowsTasks?.length || 0}
-                    </span>
-                  </div>
-                  {/* Orb Popup */}
-                  <div className="absolute left-full bottom-0 ml-4 w-80 bg-[#1e1e1e] border border-gray-700 rounded-xl shadow-2xl p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[9999] transform -translate-x-4 group-hover:translate-x-0 origin-bottom-left">
-                    <div className="flex items-center justify-between mb-3 border-b border-gray-700 pb-2">
-                      <h4 className="text-gray-200 font-bold text-sm tracking-wider flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span>
-                        Tomorrow's Tasks
-                      </h4>
-                      <span className="text-xs bg-blue-500/20 text-blue-400 border border-blue-500/50 px-2 py-0.5 rounded-full font-mono">
-                        {tomorrowsTasks?.length || 0}
-                      </span>
-                    </div>
-                    {tomorrowsTasks?.length > 0 ? (
-                      <ul className="flex flex-col gap-2 max-h-[240px] overflow-y-auto custom-scrollbar pr-1">
-                        {tomorrowsTasks.map((task) => (
-                          <li
-                            key={task._id}
-                            className="group/item flex items-center justify-between p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700 transition-all cursor-pointer border border-transparent hover:border-gray-600"
-                            onClick={() => handleOpenDetail(task)}
-                          >
-                            <div className="flex items-center gap-3 overflow-hidden">
-                              <div
-                                className="relative flex items-center justify-center w-4 h-4 rounded border border-gray-500 hover:border-blue-400 transition-colors shrink-0"
-                                onClick={(e) => handleToggleCompleted(e, task)}
-                              >
-                                <div className="w-2.5 h-2.5 bg-blue-400 rounded-sm opacity-0 hover:opacity-100 transition-opacity"></div>
-                              </div>
-                              <span className="truncate text-gray-300 text-sm group-hover/item:text-white font-medium">
-                                {task.title}
-                              </span>
-                            </div>
-                            <div
-                              onClick={(e) => handleToggleImportant(e, task)}
-                              className="w-6 h-6 flex items-center justify-center shrink-0 cursor-pointer hover:scale-110 transition-transform"
-                            >
-                              <div
-                                className={`w-2.5 h-2.5 rounded-full transition-all ${
-                                  task.isimportant
-                                    ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]'
-                                    : 'bg-transparent border border-gray-500 hover:border-red-500'
-                                }`}
-                              ></div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="text-center text-gray-500 text-xs py-4">
-                        할 일이 없습니다.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 3. Auth Section (Fixed at bottom) */}
-          <div className="w-full shrink-0 flex justify-center z-10 mt-auto">
-            {isAuth ? (
-              <div className="auth-button w-full flex items-center justify-center">
-                {
-                  // //! [Original Code] 정적인 형태의 로그인 버튼 (축소 시에도 형태 유지되어 가독성 저하)
-                  // //! <button
-                  // //!   className="group flex items-center bg-gray-300 text-gray-900 py-3 rounded-md transition-all duration-300 w-fit px-6 gap-2 justify-center shadow-md hover:bg-red-100"
-                  // //!   onClick={handleLogoutClick}
-                  // //!   title="Logout"
-                  // //! >
-                  // //!   <div className="flex items-center gap-2 group-hover:invisible">
-                  // //!     <FcGoogle className="w-5 h-5 shrink-0" />
-                  // //!     <span className="block text-sm truncate font-medium">
-                  // //!       {name ? `${name}님 환영합니다!` : 'Logout'}
-                  // //!     </span>
-                  // //!   </div>
-                  // //!   <div className="absolute inset-0 flex items-center justify-center gap-2 text-red-600 font-bold invisible group-hover:visible">
-                  // //!     <MdLogout className="w-5 h-5 shrink-0" />
-                  // //!     <span
-                  // //!       className={`block text-sm ${isDesktopOpen ? 'block' : 'hidden'}`}
-                  // //!     >
-                  // //!       Logout
-                  // //!     </span>
-                  // //!   </div>
-                  // //! </button>
-                  // //* [Modified Code] Collapsed 상태 대응: 축소 시 원형 버튼으로 전환 및 프로필 이미지(있을 시) 노출
-                }
-                <button
-                  className={`group flex items-center bg-gray-300 text-gray-900 transition-all duration-300 justify-center shadow-md hover:bg-red-100 relative
-    ${isDesktopOpen ? 'py-3 rounded-md w-fit px-6 gap-2' : 'w-10 h-10 rounded-full mx-auto'}`}
-                  onClick={handleLogoutClick}
-                  title="Logout"
-                >
-                  {
-                    // //* 정적 상태: 아이콘/프로필 + 이름(확장 시에만)
-                  }
-                  <div
-                    className={`flex items-center gap-2 group-hover:invisible ${!isDesktopOpen ? 'justify-center' : ''}`}
-                  >
-                    {picture ? (
-                      <img
-                        src={picture}
-                        alt="profile"
-                        className={`${isDesktopOpen ? 'w-5 h-5' : 'w-6 h-6'} rounded-full shrink-0 object-cover`}
-                      />
-                    ) : (
-                      <FcGoogle
-                        className={`${isDesktopOpen ? 'w-5 h-5' : 'w-6 h-6'} shrink-0`}
-                      />
-                    )}
-                    <span
-                      className={`text-sm truncate font-medium ${isDesktopOpen ? 'block' : 'hidden'}`}
-                    >
-                      {name ? `${name}님 환영합니다!` : 'Logout'}
-                    </span>
-                  </div>
-
-                  {
-                    // //* 호버 상태: 로그아웃 아이콘으로 전환
-                  }
-                  <div
-                    className={`absolute inset-0 flex items-center justify-center gap-2 text-red-600 font-bold invisible group-hover:visible ${!isDesktopOpen ? 'bg-red-100 rounded-full' : ''}`}
-                  >
-                    <MdLogout
-                      className={`${isDesktopOpen ? 'w-5 h-5' : 'w-6 h-6'} shrink-0`}
-                    />
-                    <span
-                      className={`text-sm ${isDesktopOpen ? 'block' : 'hidden'}`}
-                    >
-                      Logout
-                    </span>
-                  </div>
-                </button>
-              </div>
-            ) : (
-              <div className="auth-warpper flex justify-center w-full login-btn">
-                {isDesktopOpen ? (
-                  <GoogleOAuthProvider clientId={googleClientId}>
-                    <div className="w-full px-4">
-                      <GoogleLogin
-                        onSuccess={handleLoginSuccess}
-                        onError={handleLoginError}
-                        width="100%"
-                      />
-                      <button className="flex justify-center items-center gap-2 bg-gray-300 text-gray-500 py-3 px-4 rounded-md w-full mt-2 whitespace-nowrap">
-                        <FcGoogle className="w-5 h-5" />
-                        <span className="text-sm">Google Login</span>
-                      </button>
-                    </div>
-                  </GoogleOAuthProvider>
-                ) : (
-                  <button
-                    onClick={() => setIsDesktopOpen(true)}
-                    className="bg-gray-300 w-10 h-10 flex justify-center items-center rounded-full hover:bg-white transition-colors mx-auto"
-                    title="Login"
-                  >
-                    <FcGoogle className="w-6 h-6" />
-                  </button>
-                )}
+          <div className="flex items-center gap-5">
+            <div className="logo shrink-0 scale-110 shadow-[0_0_20px_rgba(59,130,246,0.2)]"></div>
+            {(isDesktopOpen || isSidebarOpen) && (
+              <div className="flex flex-col">
+                <h2 className="font-black text-2xl tracking-tighter italic uppercase text-white leading-none">
+                  YOUMINSU
+                </h2>
+                <span className="text-[10px] text-blue-500/60 font-black mt-2 tracking-[.3em] uppercase">
+                  Signature Hub
+                </span>
               </div>
             )}
           </div>
         </div>
+
+        <div className="nav-container flex-1 flex flex-col gap-8 overflow-y-auto custom-scrollbar">
+          {/* 메뉴 탭: 행간 슬림화 (v3.31 반영) */}
+          <ul className="flex flex-col gap-1.5">
+            {navMenus.map((m, i) => (
+              <li
+                key={i}
+                className={`rounded-[1.1rem] transition-all border ${isActive(m.to) ? 'bg-blue-600 border-blue-400 shadow-[0_10px_25px_rgba(37,99,235,0.3)]' : 'border-transparent hover:bg-white/5'}`}
+              >
+                <Link
+                  to={m.to}
+                  className={`flex items-center gap-5 py-3.5 px-5 ${isDesktopOpen ? '' : 'md:justify-center p-0 md:h-14'}`}
+                >
+                  <span
+                    className={`text-[1.4rem] ${isActive(m.to) ? 'text-white' : 'text-gray-500 transition-colors'}`}
+                  >
+                    {m.icon}
+                  </span>
+                  {(isDesktopOpen || isSidebarOpen) && (
+                    <span
+                      className={`text-[12px] font-black uppercase tracking-[0.2em] ${isActive(m.to) ? 'text-white' : 'text-gray-400'}`}
+                    >
+                      {m.label}
+                    </span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+
+          {/* 하단 브리핑 센터: Task 내용 실시간 노출 */}
+          {(isDesktopOpen || isSidebarOpen) && (
+            <div className="flex flex-col gap-6 mt-4 border-t border-white/5 pt-8 animate-in fade-in duration-700 pb-10">
+              <div className="briefing-section">
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest flex items-center gap-2">
+                    <MdToday className="text-red-500/50" /> Today
+                  </span>
+                  <span className="text-[10px] font-bold text-red-500 bg-red-500/10 px-2.5 py-0.5 rounded-full">
+                    {todaysTasks?.length || 0}
+                  </span>
+                </div>
+                <TodoList
+                  tasks={todaysTasks}
+                  onDetail={(t) =>
+                    dispatch(openModal({ modalType: 'details', task: t }))
+                  }
+                  onComplete={handleGlobalComplete}
+                />
+              </div>
+
+              <div className="briefing-section">
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest flex items-center gap-2">
+                    <MdNextPlan className="text-blue-500/50" /> Future
+                  </span>
+                  <span className="text-[10px] font-bold text-blue-500 bg-blue-500/10 px-2.5 py-0.5 rounded-full">
+                    {tomorrowsTasks?.length || 0}
+                  </span>
+                </div>
+                <TodoList
+                  tasks={tomorrowsTasks}
+                  onDetail={(t) =>
+                    dispatch(openModal({ modalType: 'details', task: t }))
+                  }
+                  onComplete={handleGlobalComplete}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-auto pt-8 border-t border-white/5 flex flex-col gap-6">
+          {authState?.name ? (
+            <div
+              className={`flex items-center gap-5 group cursor-pointer ${!isDesktopOpen && 'md:justify-center p-0'}`}
+              onClick={() =>
+                window.confirm('Terminate Session?') && dispatch(logout())
+              }
+            >
+              <img
+                src={authState.picture}
+                className="w-11 h-11 rounded-2xl border-2 border-white/10 group-hover:border-red-500/50 shadow-2xl transition-all"
+                alt="pr"
+              />
+              {(isDesktopOpen || isSidebarOpen) && (
+                <div className="flex flex-col max-w-[150px]">
+                  <span className="text-sm font-black text-gray-200 truncate">
+                    {authState.name}
+                  </span>
+                  <span className="text-[9px] font-black text-blue-500/50 group-hover:text-red-500 uppercase tracking-tighter mt-1 transition-colors">
+                    Admin Terminal Off
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => loginWithGoogle()}
+              className={`flex items-center gap-5 w-full hover:bg-white/5 p-4 rounded-2xl transition-all ${!isDesktopOpen && 'md:justify-center p-0 h-16'}`}
+            >
+              <MdPerson size={32} className="text-gray-700" />
+              {(isDesktopOpen || isSidebarOpen) && (
+                <span className="font-black uppercase text-[10px] tracking-[.3em] text-gray-600">
+                  Access Key
+                </span>
+              )}
+            </button>
+          )}
+        </div>
       </nav>
+
+      {/* //* [Global Anchored Popup] */}
+      {activeOrb && (
+        <TodoPopup
+          title={activeOrb === 'today' ? 'Today Briefing' : 'Future Insights'}
+          tasks={activeOrb === 'today' ? todaysTasks : tomorrowsTasks}
+          onClose={() => setActiveOrb(null)}
+          onDetail={(t) =>
+            dispatch(openModal({ modalType: 'details', task: t }))
+          }
+          onComplete={handleGlobalComplete}
+          onMouseEnter={() => handleOrbTrigger(activeOrb)}
+          onMouseLeave={handleOrbLeave}
+        />
+      )}
+
+      {isSidebarOpen && (
+        <div
+          onClick={() => dispatch(setSidebar(false))}
+          className="fixed inset-0 bg-black/90 backdrop-blur-md z-[45] md:hidden animate-in fade-in duration-500"
+        />
+      )}
     </>
   );
 };

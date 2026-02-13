@@ -8,12 +8,16 @@ export async function postRequest(url, options) {
     ...options,
   };
 
-  return await fetch(url, defaultOptions).then((response) => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    return response.json();
-  });
+  const response = await fetch(url, defaultOptions);
+  const isJson = response.headers
+    .get('content-type')
+    ?.includes('application/json');
+  const data = isJson ? await response.json() : await response.text();
+
+  if (!response.ok) {
+    throw data;
+  }
+  return data;
 }
 
 /* ====== Common Put Request Function ====== */
@@ -25,40 +29,56 @@ export async function putRequest(url, options) {
     },
     ...options,
   };
-  return await fetch(url, defaultOptions).then((response) => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    return response.json();
-  });
+  const response = await fetch(url, defaultOptions);
+  const isJson = response.headers
+    .get('content-type')
+    ?.includes('application/json');
+  const data = isJson ? await response.json() : await response.text();
+
+  if (!response.ok) {
+    throw data;
+  }
+  return data;
 }
 
 /* ====== Common Patch Request Function ====== */
 export async function patchRequest(url, options) {
-  return await fetch(url, options).then((response) => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    return response.json();
-  });
+  const response = await fetch(url, options);
+  const isJson = response.headers
+    .get('content-type')
+    ?.includes('application/json');
+  const data = isJson ? await response.json() : await response.text();
+
+  if (!response.ok) {
+    throw data;
+  }
+  return data;
 }
 
 /* ====== Common Delete Request Function ====== */
 export async function deleteRequest(url, options) {
-  return await fetch(url, options).then((response) => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    return response.json();
-  });
+  const response = await fetch(url, options);
+  const isJson = response.headers
+    .get('content-type')
+    ?.includes('application/json');
+  const data = isJson ? await response.json() : await response.text();
+
+  if (!response.ok) {
+    throw data;
+  }
+  return data;
 }
 
 /* ====== Common GET Request Function ====== */
 export async function getRequest(url) {
-  return await fetch(url).then((response) => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    return response.json();
-  });
+  const response = await fetch(url);
+  const isJson = response.headers
+    .get('content-type')
+    ?.includes('application/json');
+  const data = isJson ? await response.json() : await response.text();
+
+  if (!response.ok) {
+    throw data;
+  }
+  return data;
 }

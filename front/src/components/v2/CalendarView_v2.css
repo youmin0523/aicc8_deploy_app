@@ -1,0 +1,393 @@
+/* Dark Mode Custom Calendar Styles for AICC 8 V2 */
+
+.v2-calendar {
+  width: 100% !important;
+  background-color: transparent !important;
+  border: none !important;
+  font-family: inherit !important;
+  color: #e0e0e0 !important;
+}
+
+/* //* [Added Code] 모달 오픈 시 캘린더 호버 인터랙션 전체 강제 종료 (v2.91) */
+.modal-is-open .task-hover-popup {
+  display: none !important;
+}
+.modal-is-open .v2-calendar .react-calendar__tile:hover {
+  z-index: 1 !important;
+  background-color: transparent !important;
+}
+
+.v2-calendar .react-calendar__navigation {
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.v2-calendar .react-calendar__navigation button {
+  min-width: 44px;
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.v2-calendar .react-calendar__navigation button:enabled:hover,
+.v2-calendar .react-calendar__navigation button:enabled:focus {
+  background-color: #333;
+  border-color: #555;
+  color: #a78bfa;
+}
+
+.v2-calendar .react-calendar__month-view__weekdays {
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.v2-calendar .react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none;
+}
+
+.v2-calendar .react-calendar__tile {
+  max-width: none !important;
+  height: 120px !important; /* 높이 고정 */
+  padding: 8px !important;
+  background: none;
+  text-align: left !important;
+  line-height: 1;
+  font-size: 1rem;
+  color: #999;
+  border-radius: 12px;
+  position: relative;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+  border: 1px solid transparent !important;
+}
+
+/* 날짜 숫자 스타일 (상단 좌측 배치) */
+.v2-calendar .react-calendar__tile abbr {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 8px;
+  z-index: 1;
+}
+
+.v2-calendar .react-calendar__tile:enabled:hover,
+.v2-calendar .react-calendar__tile:enabled:focus {
+  background-color: #1f1f1f !important;
+  border-color: #333 !important;
+  color: #fff;
+  cursor: pointer;
+  z-index: 1000 !important; /* 호버 시 스태킹 컨텍스트 위로 올림 */
+}
+
+.v2-calendar .react-calendar__tile--now {
+  background: rgba(244, 114, 182, 0.1) !important;
+  color: #f472b6 !important;
+  border: 1px solid rgba(244, 114, 182, 0.3) !important;
+}
+
+.v2-calendar .react-calendar__tile--now abbr {
+  font-weight: 800;
+}
+
+.v2-calendar .react-calendar__tile--active {
+  background: rgba(124, 58, 237, 0.1) !important;
+  color: #a78bfa !important;
+  border: 1px solid #7c3aed !important;
+  box-shadow: none !important;
+}
+
+.v2-calendar .react-calendar__month-view__days__day--neighboringMonth {
+  color: #333 !important;
+  opacity: 0.3;
+}
+
+/* 할 일 목록 스타일 */
+.calendar-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.calendar-task-list > div {
+  pointer-events: auto !important; /* 개별 아이템 클릭 활성화 (v2.90) */
+  cursor: pointer;
+}
+
+/* [New] 호버 팝업 스타일 - 2x2 그리드 영역(4칸) 완전 오버레이 */
+.task-hover-popup {
+  display: none;
+  flex-direction: column;
+  position: absolute !important;
+  top: 0 !important; /* 타일의 최상단 테두리에 정확히 밀착 */
+
+  /* 2x2 규격 강제 고정 (타일 높이 120px 기준) */
+  width: calc(200% + 2px) !important;
+  min-width: calc(200% + 2px) !important;
+  height: 241px !important;
+  min-height: 241px !important;
+
+  background: #1a1a1a !important;
+  border: 1px solid #444;
+  border-radius: 12px;
+  padding: 0;
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.95);
+  z-index: 10000 !important; /* v2.91 조정: Modal(200,000)보다 낮은 레벨 유지 */
+
+  /* [Update] 상호작용 가능하도록 이벤트 활성화 */
+  pointer-events: auto !important;
+  cursor: default;
+  overflow: hidden;
+}
+
+/* 팝업과 타일 사이의 '데드존' 방지 - 마우스 이동 시 호버 유지용 가상 브릿지 */
+.task-hover-popup::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+}
+
+.popup-right::after {
+  right: 100%;
+}
+.popup-left::after {
+  left: 100%;
+}
+
+/* 팝업 내부 헤더/바디 상세 조정 */
+.task-hover-popup .popup-header {
+  padding: 16px 20px;
+  background: #111111;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.task-hover-popup .popup-body {
+  flex: 1;
+  padding: 14px 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 개별 할 일 아이템 보정 (중앙 정렬 중심) */
+.task-hover-popup .popup-body > div {
+  min-height: 54px; /* 일정한 높이 유지로 가독성 확보 */
+  display: flex !important;
+  align-items: center !important; /* 수직 중앙 정렬 강제 */
+}
+
+/* [CRITICAL FIX] 팝업 상단을 타일 상단과 일치시키기 위해 내부 레이아웃을 Absolute로 전환 */
+.v2-calendar .react-calendar__tile > div {
+  position: absolute !important; /* 팝업의 기준점을 타일 최하단이 아닌 테두리로 올림 */
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
+  pointer-events: none; /* 클릭 이벤트가 버튼을 통과하도록 */
+}
+
+/* 셀 내부 할 일 목록 - 날짜 숫자(abbr)가 겹치지 않도록 아래로 밀어줌 */
+.calendar-task-list {
+  margin-top: 36px !important;
+  pointer-events: auto; /* 리스트 영역은 다시 이벤트 활성화 */
+  width: 100%;
+}
+
+/* 타일 자체 스타일 - 팝업의 위치 기준점(Relative) */
+.v2-calendar .react-calendar__tile {
+  position: relative !important;
+  z-index: 1;
+  overflow: visible !important;
+  transition: none !important;
+  transform: none !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.v2-calendar .react-calendar__tile:hover {
+  z-index: 100 !important;
+  background-color: #222 !important;
+}
+
+.v2-calendar .react-calendar__tile:hover .task-hover-popup {
+  display: flex;
+}
+
+/* 중요 항목(Important) - V1 Identity Restoration (Red) */
+.important-item {
+  box-shadow: inset 0 0 15px rgba(239, 68, 68, 0.05);
+}
+
+.important-item:hover {
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  box-shadow:
+    inset 0 0 20px rgba(239, 68, 68, 0.1),
+    0 10px 25px rgba(0, 0, 0, 0.4) !important;
+}
+
+.important-item .text-yellow-500 {
+  color: #ef4444 !important; /* V1 심볼 컬러: Red */
+  filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5));
+  animation: star-pulse 2s infinite ease-in-out;
+}
+
+@keyframes star-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* 완료 항목(Completed) - V1 Identity Restoration (Green) */
+.completed-task {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-color: rgba(34, 197, 94, 0.1) !important;
+  opacity: 0.5; /* 전체적으로 흐릿하게 처리 */
+  transition: all 0.3s ease;
+}
+
+.completed-task:hover {
+  background: rgba(34, 197, 94, 0.05) !important;
+  opacity: 0.8;
+}
+
+.completed-task .text-green-500,
+.completed-task .bg-green-500 {
+  filter: drop-shadow(0 0 5px rgba(34, 197, 94, 0.3));
+}
+
+/* 위치 조정 - 타일 경계 밖으로 완전히 밀어냄 */
+.task-hover-popup.popup-right {
+  left: 100% !important;
+  margin-left: 1px; /* 1px은 그리드 가로 선 두께 */
+}
+
+.task-hover-popup.popup-left {
+  right: 100% !important;
+  margin-right: 1px;
+}
+
+/* 화살표 위치 고정 */
+.task-hover-popup::before {
+  content: '';
+  position: absolute;
+  top: 25px;
+  border: 10px solid transparent;
+}
+
+.popup-right::before {
+  right: 100%;
+  border-right-color: #444;
+}
+
+.popup-left::before {
+  left: 100%;
+  border-left-color: #444;
+}
+
+/* [CRITICAL] 팝업 탈출을 위한 모든 부모 레이어 overflow 해제 */
+.v2-calendar,
+.v2-calendar .react-calendar__viewContainer,
+.v2-calendar .react-calendar__month-view,
+.v2-calendar .react-calendar__month-view > div,
+.v2-calendar .react-calendar__month-view__days {
+  overflow: visible !important;
+}
+
+/* 기존 그리드 설정 유지 */
+.v2-calendar .react-calendar__viewContainer {
+  background-color: #121212;
+  border-radius: 20px;
+}
+
+.v2-calendar .react-calendar__month-view__weekdays {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  text-align: center;
+  padding: 1rem 0 !important;
+  background-color: #1a1a1a;
+  border-bottom: 1px solid #252525;
+}
+
+.v2-calendar .react-calendar__month-view__weekdays__weekday {
+  padding: 0 !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.v2-calendar .react-calendar__month-view__weekdays__weekday:nth-child(1) abbr {
+  color: #ff4d4f !important;
+}
+.v2-calendar .react-calendar__month-view__weekdays__weekday:nth-child(7) abbr {
+  color: #1890ff !important;
+}
+
+/* 날짜 그리드 (7열 고정 및 일정한 행 높이 보장) */
+.v2-calendar .react-calendar__month-view__days {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  grid-auto-rows: 120px !important; /* 모든 행의 높이를 120px로 고정 */
+  gap: 1px;
+  background-color: #252525;
+  border: 1px solid #252525;
+  overflow: visible !important;
+}
+
+.v2-calendar .react-calendar__tile {
+  background-color: #1a1a1a !important;
+  width: auto !important;
+  height: 120px !important; /* 높이 고정 */
+  max-height: 120px !important; /* 확장 방지 */
+  position: relative; /* 중요 */
+}
+
+/* 주말 및 공휴일 색상 */
+.v2-calendar .react-calendar__tile.sun abbr,
+.v2-calendar .react-calendar__tile.holiday abbr {
+  color: #ff4d4f !important;
+}
+
+.v2-calendar .react-calendar__tile.sat abbr {
+  color: #1890ff !important;
+}
+
+.holiday-label {
+  pointer-events: none;
+  letter-spacing: -0.02em;
+  text-shadow:
+    0 0 10px rgba(0, 0, 0, 0.8),
+    0 0 2px rgba(0, 0, 0, 1);
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.1));
+}
+
+.v2-calendar .react-calendar__tile--active.sun abbr,
+.v2-calendar .react-calendar__tile--active.sat abbr,
+.v2-calendar .react-calendar__tile--active.holiday abbr {
+  color: #fff !important;
+}

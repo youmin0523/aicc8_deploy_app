@@ -1,7 +1,10 @@
-import { MdHome } from 'react-icons/md';
-import { MdFactCheck } from 'react-icons/md';
-import { MdWatchLater } from 'react-icons/md';
-// import { BsFillExclamationSquareFill } from 'react-icons/bs';
+import {
+  MdHome,
+  MdFactCheck,
+  MdWatchLater,
+  MdCalendarMonth,
+  MdRocketLaunch,
+} from 'react-icons/md';
 import { AiFillExclamationCircle } from 'react-icons/ai';
 
 export const navMenus = [
@@ -21,8 +24,19 @@ export const navMenus = [
   {
     label: 'Important',
     to: '/important',
-    // icon: <BsFillExclamationSquareFill className="w-4 h-4" />,
     icon: <AiFillExclamationCircle className="w-5 h-5" />,
     idx: 3,
+  },
+  {
+    label: 'V2 Evolution',
+    to: '/v2',
+    icon: <MdRocketLaunch className="w-5 h-5 text-blue-400" />,
+    idx: 4,
+  },
+  {
+    label: 'Calendar V2',
+    to: '/v2/calendar',
+    icon: <MdCalendarMonth className="w-5 h-5 text-purple-400" />,
+    idx: 5,
   },
 ];

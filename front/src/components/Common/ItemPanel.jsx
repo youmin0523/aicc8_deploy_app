@@ -1,110 +1,244 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useGoogleLogin } from '@react-oauth/google';
+import { SkeletonTheme } from 'react-loading-skeleton';
+import {
+  MdCheckCircle,
+  MdPendingActions,
+  MdErrorOutline,
+  MdListAlt,
+  MdInfoOutline,
+} from 'react-icons/md';
+import { toast } from 'react-toastify';
+
 import PageTitle from './PageTitle';
 import AddItem from './AddItem';
 import Modal from './Modal';
 import Item from './Item';
-import { fetchGetItem } from '../../redux/slices/apiSlice';
-import { SkeletonTheme } from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
 import LoadingSkeleton from './LoadingSkeleton';
+import { fetchGetItem } from '../../redux/slices/apiSlice';
+import { login } from '../../redux/slices/authSlice';
+
+// //* [Mentor's Encyclopedia: Interactive Summary Board (V1 - Data Orchestration)]
+// //* 1. 데이터 정의 (Data Semantics):
+// //*    - Total: 모든 업무의 집합 / Pending: 미완료 업무 / Done: 완료 업무 / Vital: 중요 표시 업무.
+// //* 2. 실시간 동적 필터링: // //* [Quick Sort] 상단 요약 카드를 클릭하면 하단 리스트가 해당 카테고리에 맞춰 즉시 재정렬됩니다.
+// //* 3. UX 보정: 활성 필터에 하이라이트 효과를 부여하여 사용자가 현재 어떤 데이터를 보고 있는지 명확히 인지하게 함(v3.34).
+
+const SummaryCard = ({
+  icon,
+  label,
+  count,
+  colorClass,
+  borderClass,
+  active,
+  onClick,
+}) => (
+  <div
+    onClick={onClick}
+    className={`flex-1 min-w-[130px] p-4 rounded-2xl border cursor-pointer transition-all hover:scale-[1.05] shadow-lg flex items-center gap-4 group
+    ${active ? `bg-opacity-20 ${colorClass} ${borderClass.replace('/10', '/40')} ring-1 ring-white/10` : 'bg-[#161a22] border-transparent hover:border-white/5'}`}
+  >
+    <div
+      className={`p-2.5 rounded-xl ${colorClass} bg-opacity-10 text-xl shrink-0 group-hover:scale-110 transition-transform`}
+    >
+      {icon}
+    </div>
+    <div className="flex flex-col min-w-0">
+      <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest truncate group-hover:text-gray-300 transition-colors">
+        {label}
+      </span>
+      <span className="text-lg font-bold text-gray-100">{count}</span>
+    </div>
+  </div>
+);
 
 const ItemPanel = ({ pageTitle, filteredCompleted, filteredImportant }) => {
   const dispatch = useDispatch();
-
   const [loading, setLoading] = useState(false);
+  const [localFilter, setLocalFilter] = useState('all'); // 'all', 'pending', 'done', 'vital'
 
-  // Auth Data
-  const state = useSelector((state) => state.auth.authData);
-  // //! [Debug Code] Redux에서 가져온 인증 데이터 확인
-  console.log('[DEBUG] Auth State:', state);
-
-  // //! [Original Code]
-  const userKey = state?.sub;
-  // //! [Debug Code] 추출된 userKey 확인
-  console.log('[DEBUG] User Key:', userKey);
-
+  const userKey = useSelector((state) => state.auth.authData?.sub);
   const isOpen = useSelector((state) => state.modal.isOpen);
-  // console.log(isOpen);
+  const allTasks = useSelector((state) => state.api.getItemData || []);
 
-  // Get Item Data
-  const getTasksData = useSelector((state) => state.api.getItemData);
-  // console.log(getTasksData);
+  const totalCount = allTasks.length;
+  const completedCount = allTasks.filter((t) => t.iscompleted).length;
+  const pendingCount = totalCount - completedCount;
+  const importantCount = allTasks.filter((t) => t.isimportant).length;
 
   useEffect(() => {
     if (!userKey) return;
-
-    // //! [Debug Code] useEffect 실행 여부 확인
-    console.log('[DEBUG] useEffect Triggered. Fetching items for:', userKey);
-
-    const fetchGetItemsData = async () => {
+    const fetchTasks = async () => {
       try {
         setLoading(true);
         await dispatch(fetchGetItem(userKey)).unwrap();
-      } catch (error) {
-        console.log('Failed to fetch Items: ', error);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    fetchGetItemsData();
+    fetchTasks();
   }, [dispatch, userKey]);
 
-  // 1. Home 메뉴를 선택할 때:
-  // ( ... 기존 주석 내용 유지 ... )
-  // 4. Important 메뉴를 선택할 때:
+  // 페이지 이동 시 상위에서 내려주는 필터가 바뀔 수 있으므로 localFilter 초기화 로직 (선택사항)
+  useEffect(() => {
+    setLocalFilter('all');
+  }, [pageTitle]);
 
-  // //* [Restored Code] 실수로 삭제된 필터링 로직 복구
-  // //* [Bug Fix] getTasksData가 null일 경우 체이닝(.filter) 과정에서 undefined.filter() 호출로 인해 크래시가 발생하는 문제 수정
-  // -> 값이 있을 때만 필터를 수행하고, 없으면 빈 배열([])을 반환하도록 보호 조치
-  const filteredTasks = getTasksData
-    ? getTasksData
-        .filter((task) => {
-          if (filteredCompleted === 'all') return true;
-          return filteredCompleted ? task.iscompleted : !task.iscompleted;
-        })
-        .filter((task) => {
-          if (filteredImportant === undefined) return true;
-          return filteredImportant ? task.isimportant : !task.isimportant;
-        })
-    : [];
+  const sortedTasks = [...allTasks]
+    .filter((task) => {
+      // 1순위: 상위 컴포넌트(GNB/SideBar)에서 온 기본 필터링 (Home/Completed/Important 탭 대응)
+      let pass = true;
+      if (filteredCompleted !== 'all') {
+        pass = filteredCompleted ? task.iscompleted : !task.iscompleted;
+      }
+      if (filteredImportant !== undefined && pass) {
+        pass = filteredImportant ? task.isimportant : !task.isimportant;
+      }
+      return pass;
+    })
+    .filter((task) => {
+      // 2순위: 요약 카드 클릭을 통한 로컬 퀵 필터링
+      if (localFilter === 'all') return true;
+      if (localFilter === 'pending') return !task.iscompleted;
+      if (localFilter === 'done') return task.iscompleted;
+      if (localFilter === 'vital') return task.isimportant;
+      return true;
+    });
+
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: async (res) => {
+      const userInfo = await fetch(
+        'https://www.googleapis.com/oauth2/v3/userinfo',
+        {
+          headers: { Authorization: `Bearer ${res.access_token}` },
+        },
+      ).then((r) => r.json());
+      dispatch(login({ authData: userInfo }));
+      toast.success(`${userInfo.name}님 환영합니다!`);
+    },
+  });
 
   return (
-    // //! [Original Code] 테두리 제거 및 원상복구
-    // <div className="panel bg-[#212121] w-full lg:w-4/5 h-full rounded-md border border-gray-500 py-5 px-4 overflow-y-auto">
-
-    // //* [Modified Code] Layout Fix: 고정 너비(w-4/5) 제거하고 Flex-1 적용
-    // Sidebar의 너비(w-72 등)와 상관없이 남은 공간을 자동으로 가득 채우도록 수정하여 화면 잘림 현상 해결
-    <div className="panel bg-[#212121] flex-1 h-full rounded-md border border-gray-500 py-5 px-4 overflow-y-auto">
+    <div className="panel bg-[#0b0e14] flex-1 h-full py-8 md:py-10 px-6 md:px-10 overflow-y-auto custom-scrollbar">
       {userKey ? (
-        <div className="w-full h-full">
+        <div className="relative w-full h-full max-w-[1440px] mx-auto">
           {isOpen && <Modal />}
-          <PageTitle title={pageTitle} />
-          <div className="flex flex-wrap">
+
+          <div className="flex flex-col gap-8 mb-12">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <PageTitle title={pageTitle} />
+                <div className="group relative">
+                  <MdInfoOutline
+                    className="text-gray-600 hover:text-blue-500 cursor-help transition-colors"
+                    size={18}
+                  />
+                  <div className="absolute left-0 top-6 w-64 p-4 bg-[#1e2229] border border-white/10 rounded-2xl shadow-2xl opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all z-50 pointer-events-none">
+                    <h4 className="text-[10px] font-black text-blue-400 mb-2 uppercase tracking-widest">
+                      Pipeline Dictionary
+                    </h4>
+                    <ul className="flex flex-col gap-2">
+                      <li className="text-[11px] text-gray-400">
+                        <b className="text-gray-200">TOTAL:</b> 모든 업무의 총합
+                        스택
+                      </li>
+                      <li className="text-[11px] text-gray-400">
+                        <b className="text-gray-200">PENDING:</b> 실행 대기 중인
+                        미완료 건
+                      </li>
+                      <li className="text-[11px] text-gray-400">
+                        <b className="text-gray-200">DONE:</b> 프로세스가 종료된
+                        완료 건
+                      </li>
+                      <li className="text-[11px] text-gray-400">
+                        <b className="text-gray-200">VITAL:</b> 즉각 대응이
+                        필요한 중요 업무
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div className="hidden md:block text-[10px] font-black text-gray-700 tracking-widest uppercase italic">
+                Active Protocol / {localFilter.toUpperCase()} FILTRATION
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <SummaryCard
+                icon={<MdListAlt className="text-blue-400" />}
+                label="Total"
+                count={totalCount}
+                colorClass="bg-blue-600"
+                borderClass="border-blue-500/10"
+                active={localFilter === 'all'}
+                onClick={() => setLocalFilter('all')}
+              />
+              <SummaryCard
+                icon={<MdPendingActions className="text-amber-400" />}
+                label="Pending"
+                count={pendingCount}
+                colorClass="bg-amber-600"
+                borderClass="border-amber-500/10"
+                active={localFilter === 'pending'}
+                onClick={() => setLocalFilter('pending')}
+              />
+              <SummaryCard
+                icon={<MdCheckCircle className="text-emerald-400" />}
+                label="Done"
+                count={completedCount}
+                colorClass="bg-emerald-600"
+                borderClass="border-emerald-500/10"
+                active={localFilter === 'done'}
+                onClick={() => setLocalFilter('done')}
+              />
+              <SummaryCard
+                icon={<MdErrorOutline className="text-red-400" />}
+                label="Vital"
+                count={importantCount}
+                colorClass="bg-red-600"
+                borderClass="border-red-500/10"
+                active={localFilter === 'vital'}
+                onClick={() => setLocalFilter('vital')}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap -m-3">
             {loading ? (
               <SkeletonTheme
-                baseColor="#202020"
-                highlightColor="#444"
-                height="25vh"
+                baseColor="#161a22"
+                highlightColor="#232936"
+                height="28vh"
               >
                 <LoadingSkeleton />
                 <LoadingSkeleton />
                 <LoadingSkeleton />
               </SkeletonTheme>
             ) : (
-              filteredTasks?.map((task, idx) => <Item key={idx} task={task} />)
+              sortedTasks?.map((task) => <Item key={task._id} task={task} />)
             )}
-
             <AddItem />
           </div>
         </div>
       ) : (
-        <div className="login-message w-full h-full flex items-center justify-center">
-          <button className="flex justify-center items-center gap-2 bg-gray-300 text-gray-900 py-2 px-4 rounded-md">
-            <span className="text-sm font-semibold">
-              로그인이 필요한 서비스입니다.
-            </span>
-          </button>
+        <div className="w-full h-full flex flex-col items-center justify-center gap-8 animate-in fade-in duration-1000">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-3xl rotate-12 shadow-2xl flex items-center justify-center">
+            <MdListAlt size={40} className="text-white -rotate-12" />
+          </div>
+          <div className="text-center">
+            <h1 className="text-3xl font-black tracking-tighter text-white mb-2 uppercase italic">
+              Legacy Pipeline V1
+            </h1>
+            <button
+              onClick={loginWithGoogle}
+              className="mt-6 bg-white hover:bg-gray-100 text-black py-4 px-12 rounded-2xl font-black uppercase text-xs tracking-[0.3em] transition-all"
+            >
+              Initialize Access
+            </button>
+          </div>
         </div>
       )}
     </div>

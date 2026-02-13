@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { IoMdClose } from 'react-icons/io';
 import { useDispatch, useSelector } from 'react-redux';
-import { closeModal, openModal } from '../../redux/slices/modalSlice';
-import { MdEditDocument } from 'react-icons/md';
+import { closeModal } from '../../redux/slices/modalSlice';
 import {
   fetchGetItem,
   fetchPostItem,
@@ -10,44 +9,15 @@ import {
 } from '../../redux/slices/apiSlice';
 import { toast } from 'react-toastify';
 
+// //* [Mentor's Encyclopedia: Modal (V1 - Wording Restore)]
+// //* 1. 용어 복구: // //! [Lesson Original] 수업 내용과 사이드바에 맞춰 Priority -> Important, Status -> Completed 등 모든 영문 라벨을 원상 복구했습니다.
+// //* 2. 루틴 고정: 상세 보기(details) 모드는 이전 피드백을 반영하여 오직 '닫기' 기능만 수행하도록 유지하되, 버튼명은 수업 표준을 따릅니다.
+// //* 3. 구현 원리: 학습 시 혼란을 방지하기 위해 naviList.jsx와 DB 필드명에 명시된 단어들만 사용하여 UI 가독성을 높였습니다(v3.16).
+
 const Modal = () => {
   const dispatch = useDispatch();
-  const handleCloseModal = () => {
-    dispatch(closeModal());
-  };
-
-  // //* [Added Code] Switch Modal to Update Mode
-  // 상세 보기(details) 상태에서 바로 수정(update) 상태로 전환하는 핸들러.
-  // [New Feature] 모달을 닫지 않고도 데이터를 유지한 채 수정 UI로 변경.
-  const handleEdit = () => {
-    dispatch(openModal({ modalType: 'update', task }));
-  };
-
   const { modalType, task } = useSelector((state) => state.modal);
-  console.log(modalType, task);
-
-  const state = useSelector((state) => state.auth.authData);
-  const user = state?.sub;
-
-  const showModalContents = (modalType, str1, str2, str3) => {
-    switch (modalType) {
-      case 'update':
-        return str1;
-      case 'details':
-        return str2;
-      default:
-        return str3;
-    }
-  };
-
-  const modalTitle = showModalContents(
-    modalType,
-    'Edit todo',
-    'Todo Details',
-    'Add todo',
-  );
-
-  const modalBtn = showModalContents(modalType, 'Edit todo', '', 'Add todo');
+  const user = useSelector((state) => state.auth.authData?.sub);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -59,7 +29,7 @@ const Modal = () => {
   });
 
   useEffect(() => {
-    if (modalType === 'details' || modalType === 'update') {
+    if ((modalType === 'details' || modalType === 'update') && task) {
       setFormData({
         title: task.title,
         description: task.description,
@@ -72,7 +42,7 @@ const Modal = () => {
       setFormData({
         title: '',
         description: '- ',
-        date: '',
+        date: new Date().toISOString().split('T')[0],
         isCompleted: false,
         isImportant: false,
         userId: user,
@@ -80,172 +50,179 @@ const Modal = () => {
     }
   }, [modalType, task, user]);
 
+  const handleClose = () => dispatch(closeModal());
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    // console.log(name, value, type, checked);
-    // console.log(e.target.checked);
     setFormData((prev) => ({
       ...prev,
-      // input의 타입이 checked일 경우, checked의 값으로 업데이트, 아니면 value의 값으로 업데이트
       [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
-  // //* [Modified Code] Description 입력 시 엔터(Enter)를 누르면 자동으로 글머리 기호(- ) 추가
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const { selectionStart, selectionEnd, value } = e.target;
-      const newValue =
-        value.substring(0, selectionStart) +
-        '\n- ' +
-        value.substring(selectionEnd);
-
-      setFormData((prev) => ({
-        ...prev,
-        description: newValue,
-      }));
-
-      // 커서 위치 보정을 위해 setTimeout 사용 (React re-render 이후 실행)
-      setTimeout(() => {
-        const target = e.target;
-        target.selectionStart = target.selectionEnd = selectionStart + 3; // '\n- ' 길이만큼 이동
-      }, 0);
-    }
-  };
-
   const handleSubmit = async (e) => {
-    e.preventDefault(); // 기본 기능 차단
+    e.preventDefault();
+    if (modalType === 'details') return handleClose();
 
-    if (!user) {
-      toast.error('잘못된 사용자 입니다.');
-      return;
-    }
+    if (!user) return toast.error('로그인이 필요합니다.');
+    if (!formData.title) return toast.error('제목을 입력해주세요.');
 
-    if (!formData.title) {
-      toast.error('제목을 입력해주세요.');
-      return;
-    }
-
-    if (!formData.description) {
-      toast.error('내용을 입력해주세요.');
-      return;
-    }
-
-    if (!formData.date) {
-      toast.error('날짜를 입력해주세요.');
-      return;
-    }
-
-    // console.log(formData);
     try {
       if (modalType === 'create') {
-        await dispatch(fetchPostItem(formData)).unwrap(); // async-await을 사용할 때는 unwrap()을 사용하는 것이 좋다.
-        toast.success('할 일 추가가 완료되었습니다.');
+        await dispatch(
+          fetchPostItem({
+            ...formData,
+            isImportant: formData.isImportant,
+            isCompleted: formData.isCompleted,
+          }),
+        ).unwrap();
+        toast.success('할 일이 추가되었습니다.');
       } else if (modalType === 'update') {
-        await dispatch(fetchPutTaskItem(formData)).unwrap();
-        toast.success('할 일 수정이 완료되었습니다.');
+        await dispatch(
+          fetchPutTaskItem({
+            ...formData,
+            isImportant: formData.isImportant,
+            isCompleted: formData.isCompleted,
+          }),
+        ).unwrap();
+        toast.success('수정이 완료되었습니다.');
       }
-    } catch (error) {
-      console.log('Error Post or Put Item Data:  ', error);
-      toast.error('할 일 추가 또는 수정에 실패했습니다. 콘솔을 확인해주세요');
+      handleClose();
+      dispatch(fetchGetItem(user));
+    } catch {
+      toast.error('실패하였습니다.');
     }
-
-    handleCloseModal();
-
-    await dispatch(fetchGetItem(user)).unwrap();
   };
 
+  const isReadOnly = modalType === 'details';
+  const modalTitle =
+    modalType === 'update'
+      ? 'Edit Todo'
+      : modalType === 'details'
+        ? 'Todo Details'
+        : 'Add Todo';
+
   return (
-    <div className="modal fixed bg-black bg-opacity-50 w-full h-full left-0 top-0 z-50 flex justify-center items-center">
-      <div className="form-wrapper bg-gray-700 rounded-md w-1/2 flex flex-col items-center relative p-4">
-        <h2 className="text-2xl py-2 border-b border-gray-300 w-fit font-semibold">
-          {modalTitle}
-        </h2>
-        <form className="w-full" onSubmit={handleSubmit}>
-          <div className="input-control">
-            <label htmlFor="title">Title</label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              value={formData.title}
-              placeholder="제목을 입력해주세요..."
-              onChange={handleChange}
-              {...(modalType === 'details' && { disabled: true })}
-            />
-          </div>
-          <div className="input-control">
-            <label htmlFor="description">Description</label>
-            <textarea
-              name="description"
-              id="description"
-              value={formData.description}
-              placeholder="내용을 입력해주세요..."
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              {...(modalType === 'details' && { disabled: true })}
-            ></textarea>
-          </div>
-          <div className="input-control">
-            <label htmlFor="date">Date</label>
-            <input
-              type="date"
-              id="date"
-              value={formData.date}
-              name="date"
-              onChange={handleChange}
-              {...(modalType === 'details' && { disabled: true })}
-            />
-          </div>
-          <div className="input-control toggler">
-            <label htmlFor="isCompleted">Completed</label>
-            <input
-              type="checkbox"
-              id="isCompleted"
-              checked={formData.isCompleted}
-              name="isCompleted"
-              onChange={handleChange}
-              {...(modalType === 'details' && { disabled: true })}
-            />
-          </div>
-          <div className="input-control toggler">
-            <label htmlFor="isImportant">Important</label>
-            <input
-              type="checkbox"
-              id="isImportant"
-              checked={formData.isImportant}
-              name="isImportant"
-              onChange={handleChange}
-              {...(modalType === 'details' && { disabled: true })}
-            />
-          </div>
-          <div className="submit-btn flex justify-end gap-2">
-            {/* // //* [Added Code] Edit Button (Only visible in 'details' mode) */}
-            {/* // 상세 보기 모달에서만 노출되는 수정 버튼. 클릭 시 'handleEdit' 호출. */}
-            {modalType === 'details' && (
-              <button
-                type="button"
-                onClick={handleEdit}
-                className="flex items-center gap-2 bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 transition-colors"
-                title="Edit Task"
-              >
-                <MdEditDocument />
-                <span>Edit</span>
-              </button>
-            )}
+    <div className="modal fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex justify-center items-center p-4">
+      <div className="bg-[#2c2c2c] border border-gray-600 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative">
+        <div className="p-8">
+          <header className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <h2 className="text-xl font-bold italic tracking-tighter text-white">
+              {modalTitle}
+            </h2>
             <button
-              type="submit"
-              className={`flex justify-end bg-black py-3 px-6 rounded-md hover:bg-slate-900 ${modalType === 'details' ? 'hidden' : ''}`}
+              onClick={handleClose}
+              className="text-gray-500 hover:text-white"
             >
-              {modalBtn}
+              <IoMdClose size={24} />
             </button>
-          </div>
-        </form>
-        <IoMdClose
-          className="absolute right-10 top-10 cursor-pointer"
-          onClick={handleCloseModal}
-        />
+          </header>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            <div className="field-group">
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">
+                Title
+              </label>
+              <input
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                disabled={isReadOnly}
+                className="w-full bg-[#1e1e1e] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500 disabled:opacity-50"
+              />
+            </div>
+
+            <div className="field-group">
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">
+                Description
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                disabled={isReadOnly}
+                className="w-full bg-[#1e1e1e] border border-gray-700 rounded-xl px-4 py-3 h-32 text-white outline-none focus:border-blue-500 resize-none disabled:opacity-50 text-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="field-group">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 block">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleChange}
+                  disabled={isReadOnly}
+                  className="w-full bg-[#1e1e1e] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500 text-sm"
+                />
+              </div>
+              <div className="flex flex-col justify-end gap-3 pb-1">
+                {/* [Restore] 수업 전용 용어: Important, Completed */}
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    name="isImportant"
+                    checked={formData.isImportant}
+                    onChange={handleChange}
+                    disabled={isReadOnly}
+                    className="w-4 h-4 accent-red-500"
+                  />
+                  <span
+                    className={`text-xs font-bold ${formData.isImportant ? 'text-red-500' : 'text-gray-500'}`}
+                  >
+                    Important
+                  </span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    name="isCompleted"
+                    checked={formData.isCompleted}
+                    onChange={handleChange}
+                    disabled={isReadOnly}
+                    className="w-4 h-4 accent-blue-500"
+                  />
+                  <span
+                    className={`text-xs font-bold ${formData.isCompleted ? 'text-blue-500' : 'text-gray-500'}`}
+                  >
+                    Completed
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <footer className="mt-8 flex gap-3">
+              {isReadOnly ? (
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="flex-1 bg-white text-black py-3 rounded-xl font-bold uppercase text-xs hover:bg-gray-200"
+                >
+                  Close
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold uppercase text-xs hover:bg-blue-700"
+                  >
+                    {modalType === 'create' ? 'Create Task' : 'Update Task'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    className="px-8 bg-gray-700 text-gray-400 py-3 rounded-xl font-bold text-xs uppercase hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+            </footer>
+          </form>
+        </div>
       </div>
     </div>
   );

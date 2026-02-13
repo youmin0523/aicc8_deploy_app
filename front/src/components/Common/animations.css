@@ -1,8 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Global Animations for Loaders */
 
-/* --- Loader Global Animations --- */
+/* --- InitialSpaceLoader Animations --- */
 @keyframes earth-rotate {
   0% {
     transform: rotate(0deg);
@@ -55,6 +53,24 @@
     filter: blur(10px);
   }
 }
+
+.animate-earth-rotate {
+  animation: earth-rotate 120s linear infinite;
+}
+.animate-fade-in-up {
+  animation: fade-in-up 1s ease-out forwards;
+}
+.animate-star-streak {
+  animation: star-streak 1s ease-in infinite;
+}
+.animate-flash-entry {
+  animation: flash-entry 2.5s ease-in-out forwards;
+}
+.animate-zoom-text {
+  animation: zoom-text 2s ease-in forwards;
+}
+
+/* --- VersionLoader Animations --- */
 @keyframes rocket-cross-v2 {
   0% {
     transform: translate(-30vw, 110vh) scale(0.5);
@@ -163,21 +179,6 @@
   }
 }
 
-.animate-earth-rotate {
-  animation: earth-rotate 120s linear infinite;
-}
-.animate-fade-in-up {
-  animation: fade-in-up 1s ease-out forwards;
-}
-.animate-star-streak {
-  animation: star-streak 1s ease-in infinite;
-}
-.animate-flash-entry {
-  animation: flash-entry 2.5s ease-in-out forwards;
-}
-.animate-zoom-text {
-  animation: zoom-text 2s ease-in forwards;
-}
 .animate-rocket-cross-v2 {
   animation: rocket-cross-v2 2.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
