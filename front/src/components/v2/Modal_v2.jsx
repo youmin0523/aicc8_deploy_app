@@ -5,6 +5,7 @@ import {
   fetchGetItemV2,
   fetchPostItemV2,
   fetchPutTaskItemV2,
+  fetchGetTaskHistoryV2,
 } from '../../redux/slices/tasksSlice_v2';
 import { fetchCategories } from '../../redux/slices/categoriesSlice_v2';
 import { toast } from 'react-toastify';
@@ -23,6 +24,9 @@ const ModalV2 = () => {
   const { modalType, task } = useSelector((state) => state.modalV2);
   const user = useSelector((state) => state.auth.authData?.sub);
   const { categories } = useSelector((state) => state.categoriesV2);
+  const { taskHistory } = useSelector((state) => state.tasksV2);
+
+  const [activeTab, setActiveTab] = useState('info'); // 'info' or 'history'
 
   const [formData, setFormData] = useState({
     title: '',
@@ -64,6 +68,12 @@ const ModalV2 = () => {
       setIsInitialized(true);
     }
   }, [modalType, task, isInitialized, user]);
+
+  useEffect(() => {
+    if (activeTab === 'history' && task?._id) {
+      dispatch(fetchGetTaskHistoryV2(task._id));
+    }
+  }, [activeTab, task?._id, dispatch]);
 
   const handleClose = () => {
     setIsInitialized(false);
@@ -111,7 +121,27 @@ const ModalV2 = () => {
         className="v2-modal-content bg-[#121212] border border-gray-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <form onSubmit={handleSubmit} className="p-8">
+        <div className="flex border-b border-gray-800">
+          <button
+            onClick={() => setActiveTab('info')}
+            className={`flex-1 py-5 text-xs font-black uppercase tracking-[0.2em] transition-all ${activeTab === 'info' ? 'text-blue-500 bg-blue-500/5' : 'text-gray-600 hover:text-gray-400'}`}
+          >
+            Mission Info
+          </button>
+          {(modalType === 'edit' || modalType === 'details') && (
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`flex-1 py-5 text-xs font-black uppercase tracking-[0.2em] transition-all ${activeTab === 'history' ? 'text-emerald-500 bg-emerald-500/5' : 'text-gray-600 hover:text-gray-400'}`}
+            >
+              Audit History
+            </button>
+          )}
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className={`p-8 ${activeTab !== 'info' ? 'hidden' : ''}`}
+        >
           <header className="flex justify-between items-center mb-10">
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 py-1 px-3 bg-blue-500/10 rounded-full border border-blue-500/20">
               V2 {modalType} Mode
@@ -249,6 +279,64 @@ const ModalV2 = () => {
             </button>
           </footer>
         </form>
+
+        {activeTab === 'history' && (
+          <div className="p-8 max-h-[600px] overflow-y-auto custom-scrollbar bg-[#0f0f0f]">
+            <header className="flex justify-between items-center mb-8">
+              <h3 className="text-xl font-black italic tracking-tighter text-emerald-500 uppercase">
+                System Audit Log
+              </h3>
+              <span className="text-[10px] text-gray-700 font-mono tracking-widest">
+                {taskHistory.length} ENTRIES FOUND
+              </span>
+            </header>
+
+            <div className="space-y-6">
+              {taskHistory.length > 0 ? (
+                taskHistory.map((log) => (
+                  <div
+                    key={log._id}
+                    className="relative pl-8 border-l-2 border-gray-800 pb-2 group"
+                  >
+                    <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-[#121212] border-2 border-gray-800 group-hover:border-emerald-500 transition-colors flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 rounded-full bg-gray-800 group-hover:bg-emerald-500 transition-colors" />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded bg-black border ${
+                            log.changetype === 'CREATE'
+                              ? 'text-blue-500 border-blue-500/20'
+                              : log.changetype === 'UPDATE'
+                                ? 'text-yellow-500 border-yellow-500/20'
+                                : log.changetype === 'STATUS'
+                                  ? 'text-emerald-500 border-emerald-500/20'
+                                  : 'text-gray-500 border-gray-800'
+                          }`}
+                        >
+                          {log.changetype}
+                        </span>
+                        <span className="text-[10px] font-mono text-gray-700">
+                          {format(
+                            parseISO(log.updated_at),
+                            'yyyy.MM.dd HH:mm:ss',
+                          )}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-400 leading-relaxed font-medium bg-white/5 p-4 rounded-2xl border border-white/5 group-hover:border-emerald-500/10 transition-all">
+                        {log.logmessage}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-20 text-center text-gray-800 font-bold uppercase tracking-widest italic">
+                  No logs initialized yet.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

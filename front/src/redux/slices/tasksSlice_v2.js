@@ -5,6 +5,7 @@ import {
   UPDATE_COMPLETED_TASK_V2_API_URL,
   DELETE_TASK_V2_API_URL,
   UPDATE_TASK_V2_API_URL,
+  GET_TASK_HISTORY_V2_API_URL,
 } from '../../utils/apiUrls_v2';
 
 import {
@@ -35,9 +36,15 @@ const getItemThunk = (type, url) =>
   });
 
 const patchItemThunk = (type, url) =>
-  createAsyncThunk(type, async (opt, { rejectWithValue }) => {
+  createAsyncThunk(type, async (data, { rejectWithValue }) => {
     try {
-      return await patchRequest(url, opt);
+      return await patchRequest(url, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
     } catch (error) {
       return rejectWithValue(error);
     }
@@ -82,11 +89,16 @@ export const fetchPutTaskItemV2 = putItemThunk(
   'apiV2/fetchPutTaskItem',
   UPDATE_TASK_V2_API_URL,
 );
+export const fetchGetTaskHistoryV2 = getItemThunk(
+  'apiV2/fetchGetTaskHistory',
+  GET_TASK_HISTORY_V2_API_URL,
+);
 
 const tasksSliceV2 = createSlice({
   name: 'tasksV2',
   initialState: {
     tasks: [],
+    taskHistory: [],
     status: 'idle',
     error: null,
   },
@@ -97,6 +109,9 @@ const tasksSliceV2 = createSlice({
       })
       .addCase(fetchGetItemV2.rejected, (state, action) => {
         state.error = action.payload?.msg || action.error.message;
+      })
+      .addCase(fetchGetTaskHistoryV2.fulfilled, (state, action) => {
+        state.taskHistory = action.payload;
       });
   },
 });

@@ -2,11 +2,66 @@
 
 ## Revision History
 
-**[Current Revision: v3.43_260213]**
+**[Current Revision: v3.64_260213]**
 
-- **v3.43_260213**: [front/src/components/Common/Modal.jsx]
-  - **최종 최적화**: 한국어 IME 입력 시 자음 중복 현상(-ㅇ안녕)을 `onCompositionStart` 트리거로 완벽 차단.
-  - **UX 완성**: 입력 전에는 플레이스홀더를 보여주고, 입력 시작 시에만 불렛('- ')이 나타나도록 이중 트리거 시스템 구축. (Done)
+- **v3.64_260213**: [front/src/redux/slices/tasksSlice_v2.js]
+  - **버그 수정(Critical)**: `patchItemThunk` 함수에서 API 요청 시 `JSON.stringify(data)` 변환이 누락되어 백엔드로 빈 객체가 전송되는 문제 해결.
+  - **원인 규명**: 프론트엔드 요청 데이터 포맷 오류로 확인됨 (백엔드 로직 문제가 아님). (Done)
+
+- **v3.63_260213**: [back/controllers/taskControllers_v2.js]
+  - **긴급 조치(Hotfix)**: Task 상태 변경(`updateCompletedTaskV2`) 시 발생하는 DB 락(행 걸림) 가능성을 배제하기 위해 Audit Logging(`logTaskChange`) 호출을 임시 비활성화.
+  - **진단**: 히스토리 테이블 생성 스크립트 실행이 지연되는 현상과 연관된 커넥션 풀 문제 해결 목적. (Debugging)
+
+- **v3.62_260213**: [back/controllers/taskControllers_v2.js]
+  - **안정성 강화**: Task 상태 변경 시 `task_logs` 테이블 부재로 인한 트랜잭션 롤백 방지 로직 추가.
+  - **에러 핸들링**: Audit 로깅 실패 시 메인 로직은 정상 수행되도록 예외 처리(`try-catch`) 개선. (Done)
+
+- **v3.61_260213**: [front/src/components/v2/CalendarSectionV2.jsx] & [back/create_table_task_logs.js]
+  - **버그 수정**: `react-calendar` v6 호환성을 위해 `calendarType="US"`를 `calendarType="gregory"`로 변경하여 렌더링 오류(화면 꺼짐) 해결.
+  - **DB**: `task_logs` 테이블 생성 스크립트 실행으로 백엔드 에러 방지. (Done)
+
+- **v3.60_260213**: [front/src/components/v2/CalendarSectionV2.jsx]
+  - **설정 변경**: 캘린더 시작 요일을 글로벌 표준인 '일요일(Sunday)'로 변경 (`calendarType="US"`). (Done)
+
+- **v3.59_260213**: [front/src/components/v2/Modal_v2.jsx]
+  - **UI 완성**: 모달 내 탭 시스템(Info/History) 도입 및 타임라인 기반 감사 로그(Audit Log) 뷰 구현. (Done)
+
+- **v3.58_260213**: [front/src/redux/slices/tasksSlice_v2.js] & [utils/apiUrls_v2.js]
+  - **데이터 연동**: 이력 조회용 ReduxThunk 및 API 엔드포인트 상수 추가. (Done)
+
+- **v3.57_260213**: [back/controllers/taskControllers_v2.js] & [back/routes/taskRoutes_v2.js]
+  - **시스템 구축**: Task 변경 감지 로깅 함수(`logTaskChange`) 및 이력 조회 API 구현.
+  - **로직 추가**: 수정/상태 변경 시 이전 값과 비교하여 구체적인 변경 로그 생성. (Done)
+
+- **v3.56_260213**: [back/database/database_v2.sql]
+  - **스키마 확장**: 변경 이력 저장을 위한 `task_logs` 테이블 추가. (Done)
+
+- **v3.55_260213**: [front/src/components/v2/ItemPanel_v2.jsx] & [CalendarSectionV2.jsx]
+  - **레이아웃 수정**: 고정된 Neon Orb와 'Add New Task' 버튼 및 캘린더 날짜 배지가 겹치는 현상 해결 (`pr-40` 추가).
+  - **시각적 정렬**: 대시보드 상단 요소들 간의 충돌 방지 및 여백 최적화. (Done)
+
+- **v3.54_260213**: [front/src/components/v2/Navbar_v2.jsx]
+  - **버그 수정**: 누락된 사이드바 개폐 상태(`isSidebarOpen`) 변수 복구 및 문법 오류 최종 수정. (Done)
+
+- **v3.53_260213**: [front/src/components/v2/Navbar_v2.jsx]
+  - **UX 이식**: V1의 핵심 기능인 Neon Orb(Today/Tomorrow 요약) 시스템을 V2에 이식.
+  - **기능 추가**: 업무 요약 팝업, 호버 브릿지, 실시간 완료 처리(`handleGlobalComplete`) 기능 구현. (Done)
+
+- **v3.52_260213**: [front/src/components/v2/Navbar_v2.jsx]
+  - **UX 완성**: 'All Tasks' 클릭 시 상단으로 부드럽게 복귀하는 `handleAllTasksClick` 로직 추가.
+  - **Navigation**: 캘린더와 할 일 목록 사이를 자유롭게 왕복하는 양방향 스무스 스크롤 인터랙션 고도화. (Done)
+
+- **v3.50_260213**: [front/src/components/v2/ItemPanel_v2.jsx]
+  - **기능 추가**: URL 해시(#calendar-view) 감지 및 온마운트 자동 스크롤 기능 구현. (Done)
+
+- **v3.49_260213**: [front/src/components/v2/Navbar_v2.jsx]
+  - **UX 개선**: Calendar 클릭 시 페이지 이동 없이 부동의 캘린더 섹션으로 스무스 스크롤 애니메이션 적용. (Done)
+
+- **v3.48_260213**: [front/src/components/v2/ItemPanel_v2.jsx]
+  - **아키텍처 변경**: 독립된 페이지였던 캘린더를 메인 패널 하단에 내장(Integrated)하고 전체 스크롤 활성화. (Done)
+
+- **v3.47_260213**: [front/src/components/v2/CalendarSectionV2.jsx]
+  - **모듈화**: V2 대시보드 내장을 위해 캘린더 핵심 로직을 독립 컴포넌트로 분리 및 최적화. (Done)
 
 - **v3.42_260213**: [front/src/components/Common/Modal.jsx]
   - **수정**: 첫 글자 입력 시 하이픈 누락 현상 해결 및 자동 삭제 로직 추가. (Done)

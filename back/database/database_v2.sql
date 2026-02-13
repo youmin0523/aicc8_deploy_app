@@ -24,7 +24,16 @@ CREATE TABLE tasks_v2 (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. 샘플 데이터 (초기 설정용)
+-- 3. 작업 이력 테이블 (Task Logs)
+CREATE TABLE task_logs (
+    _id TEXT PRIMARY KEY,
+    taskId TEXT REFERENCES tasks_v2(_id) ON DELETE CASCADE,
+    changeType TEXT NOT NULL, -- 'CREATE', 'UPDATE', 'STATUS_CHANGE', 'IMPORTANT_CHANGE'
+    logMessage TEXT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4. 샘플 데이터 (초기 설정용)
 -- 먼저 카테고리 생성 (예시 유저: user_test)
 INSERT INTO categories (_id, name, color, userId) VALUES 
 ('cat_1', 'Work', '#4A90E2', 'user_test'),

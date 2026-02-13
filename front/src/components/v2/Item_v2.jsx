@@ -72,7 +72,7 @@ const ItemV2 = ({ task }) => {
   return (
     <div
       onClick={handleOpenDetail}
-      className="bg-[#1a1a1a] border border-gray-800 rounded-[2rem] p-6 hover:border-gray-600 transition-all group relative overflow-hidden cursor-pointer flex flex-col h-[380px] shadow-2xl"
+      className="bg-[#1a1a1a] border border-gray-800 rounded-[2rem] p-6 hover:border-gray-600 transition-all group relative overflow-hidden cursor-pointer flex flex-col h-[395px] shadow-2xl"
     >
       {/* //* [V2 Visual Identity] 좌측 세로 컬러 바 */}
       <div
@@ -83,7 +83,7 @@ const ItemV2 = ({ task }) => {
         }}
       />
 
-      <div className="flex justify-between items-start mb-6">
+      <div className="flex justify-between items-start mb-3">
         <h3 className="text-2xl font-black text-gray-100 group-hover:text-blue-400 transition-colors truncate pr-4 italic tracking-tighter">
           {task.title}
         </h3>
@@ -95,7 +95,7 @@ const ItemV2 = ({ task }) => {
         </button>
       </div>
 
-      <div className="text-gray-500 text-sm mb-6 line-clamp-3 h-[72px] overflow-hidden whitespace-pre-line leading-relaxed font-medium">
+      <div className="text-gray-200 text-[13.5px] mb-3 line-clamp-4 h-[92px] overflow-hidden whitespace-pre-line leading-relaxed font-medium">
         {task.description}
       </div>
 
@@ -142,7 +142,7 @@ const ItemV2 = ({ task }) => {
         )}
       </div>
 
-      <div className="mt-6 pt-6 border-t border-gray-800/80">
+      <div className="mt-4 pt-4 border-t border-gray-800/80">
         <button
           onClick={handleToggleCompleted}
           className={`w-full flex items-center justify-center gap-3 h-14 rounded-2xl border transition-all font-black text-xs uppercase tracking-[0.3em] ${task.iscompleted ? 'bg-emerald-500 border-transparent text-white shadow-lg shadow-emerald-500/20' : 'bg-transparent border-gray-800 text-gray-600 hover:border-blue-500 hover:text-blue-400'}`}

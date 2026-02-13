@@ -9,5 +9,6 @@ router.patch(
   taskControllers.updateCompletedTaskV2,
 );
 router.delete('/delete_task_v2/:itemId', taskControllers.deleteTaskV2);
+router.get('/get_task_history_v2/:taskId', taskControllers.getTaskHistoryV2);
 
 module.exports = router;

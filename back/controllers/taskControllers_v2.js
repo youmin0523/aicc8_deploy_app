@@ -9,7 +9,25 @@ const { v4: uuidv4 } = require('uuid');
 // //*    - // //! [Original Logic] 새로운 기능(V2)을 만들 때 기존 기능(V1)의 API를 완전히 새로 만들어야 했음.
 // //*    - // //* [Modified Logic] '하이브리드 아키텍처'를 채택하여, V1과 V2 데이터를 동시에 관리하는 중복 로직 구현(v2.97).
 
+// //* [Added Code] 작업 이력 기록 함수 (Audit Log)
+const MAX_Retries = 3;
+
+// //* [Added Code] 작업 이력 기록 함수 (Audit Log)
+const logTaskChange = async (taskId, type, message) => {
+  try {
+    const _id = uuidv4();
+    await database.pool.query(
+      `INSERT INTO task_logs (_id, taskId, changeType, logMessage) VALUES ($1, $2, $3, $4)`,
+      [_id, taskId, type, message],
+    );
+  } catch (err) {
+    // 로깅 실패가 메인 트랜잭션을 방해하지 않도록 에러를 삼키고 콘솔에만 기록
+    console.error('Audit Logging skipped:', err.message);
+  }
+};
+
 // //* [Modified Code] V1+V2 통합 조회
+
 exports.getTasksV2 = async (request, response) => {
   const userId = request.params.userId;
   try {
@@ -63,6 +81,10 @@ exports.postTaskV2 = async (request, response) => {
       categoryId,
       userId,
     ]);
+
+    // //* [Added Code] 생성 이력 기록
+    await logTaskChange(_id, 'CREATE', 'New mission initialized');
+
     return response.status(201).json({ msg: 'V2 생성 완료', id: _id });
   } catch (err) {
     return response.status(500).json({ msg: 'Create Failed' });
@@ -83,6 +105,12 @@ exports.updateTaskV2 = async (request, response) => {
   const formattedDate = due_date.replace('T', ' ');
 
   try {
+    const oldTaskRes = await database.pool.query(
+      'SELECT * FROM tasks_v2 WHERE _id = $1',
+      [_id],
+    );
+    const oldTask = oldTaskRes.rows[0];
+
     const v2Res = await database.pool.query(
       `UPDATE tasks_v2 SET title=$1, description=$2, due_date=$3, iscompleted=$4, isimportant=$5, categoryid=$6 WHERE _id=$7`,
       [
@@ -95,6 +123,27 @@ exports.updateTaskV2 = async (request, response) => {
         _id,
       ],
     );
+
+    if (v2Res.rowCount > 0 && oldTask) {
+      // //* [Added Code] 변경 사항 감지 및 로깅
+      const changes = [];
+      if (oldTask.title !== title)
+        changes.push(`Title: "${oldTask.title}" -> "${title}"`);
+      if (oldTask.description !== description)
+        changes.push('Description modified');
+      if (oldTask.isimportant !== isImportant)
+        changes.push(
+          isImportant ? 'Marked as Important' : 'Unmarked Important',
+        );
+      if (oldTask.iscompleted !== isCompleted)
+        changes.push(
+          isCompleted ? 'Mission Accomplished' : 'Mission Re-opened',
+        );
+
+      if (changes.length > 0) {
+        await logTaskChange(_id, 'UPDATE', changes.join(' | '));
+      }
+    }
 
     if (v2Res.rowCount === 0) {
       if (categoryId) {
@@ -118,6 +167,11 @@ exports.updateTaskV2 = async (request, response) => {
               categoryId,
               userId,
             ],
+          );
+          await logTaskChange(
+            _id,
+            'UPGRADE',
+            'Task upgraded from V1 to V2 with category assignment',
           );
           return response.status(200).json({ msg: 'Upgraded to V2' });
         }
@@ -163,13 +217,40 @@ exports.updateCompletedTaskV2 = async (request, response) => {
       'UPDATE tasks_v2 SET iscompleted = $1 WHERE _id = $2',
       [isCompleted, itemId],
     );
-    if (resV2.rowCount === 0)
-      await database.pool.query(
+    if (resV2.rowCount > 0) {
+      /* await logTaskChange(
+        itemId,
+        'STATUS',
+        isCompleted ? 'Marked as Done (Orb/Panel)' : 'Returned to Pending',
+      ); */
+    } else {
+      // V2에 없으면 V1 업데이트 시도 (Fall-back)
+      const resV1 = await database.pool.query(
         'UPDATE tasks SET iscompleted = $1 WHERE _id = $2',
         [isCompleted, itemId],
       );
+      if (resV1.rowCount === 0) {
+        console.warn(`Task ${itemId} not found in V1 or V2`);
+        return response.status(404).json({ msg: 'Task Not Found' });
+      }
+    }
+
     return response.status(200).json({ msg: 'Status Fixed' });
   } catch (err) {
-    return response.status(500).json({ msg: 'Fix Failed' });
+    console.error('Update Completed Status Error:', err);
+    return response.status(500).json({ msg: 'Fix Failed', error: err.message });
+  }
+};
+
+exports.getTaskHistoryV2 = async (request, response) => {
+  const taskId = request.params.taskId;
+  try {
+    const result = await database.pool.query(
+      'SELECT * FROM task_logs WHERE taskId = $1 ORDER BY updated_at DESC',
+      [taskId],
+    );
+    return response.status(200).json(result.rows);
+  } catch (err) {
+    return response.status(500).json({ msg: 'Get History Failed' });
   }
 };
