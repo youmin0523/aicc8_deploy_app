@@ -41,7 +41,7 @@ const Modal = () => {
     } else {
       setFormData({
         title: '',
-        description: '- ',
+        description: '',
         date: new Date().toISOString().split('T')[0],
         isCompleted: false,
         isImportant: false,
@@ -54,10 +54,65 @@ const Modal = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
+    // //* [Smart Cleaning] 하이픈만 남고 다 지워졌을 때는 빈 값으로 돌려 플레이스홀더 속성 복구
+    if (
+      name === 'description' &&
+      (value === '-' || value === '- ' || value === ' ')
+    ) {
+      setFormData((prev) => ({ ...prev, [name]: '' }));
+      return;
+    }
+
+    // //* [Controlled Input] 모든 입력은 상태와 동기화
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+  };
+
+  const handleCompositionStart = (e) => {
+    // //* [IME Protection] 한국어 입력이 시작되는 순간, 값이 비어있다면 미리 '- '를 깔아줌
+    // //* 이 처리를 통해 'ㅇ' -> '- ㅇ'으로 조합이 깨지지 않고 이어짐
+    const { name, value } = e.target;
+    if (name === 'description' && !value) {
+      setFormData((prev) => ({ ...prev, description: '- ' }));
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    const { name, value, selectionStart } = e.target;
+
+    // //* [Non-IME Start] 영문/숫자 등 일반 키 입력 시작 시점에 불렛 자동 삽입
+    if (
+      name === 'description' &&
+      !value &&
+      e.key.length === 1 &&
+      !e.ctrlKey &&
+      !e.metaKey
+    ) {
+      setFormData((prev) => ({ ...prev, description: '- ' }));
+      // 여기서의 입력값은 브라우저가 자동으로 '- ' 뒤에 붙여줌
+    }
+
+    // //* [Enter Key Smart Bullet] 엔터를 치면 줄바꿈과 동시에 '- ' 자동 입력
+    if (name === 'description' && e.key === 'Enter') {
+      if (e.nativeEvent.isComposing) return;
+      e.preventDefault();
+
+      const before = value.substring(0, selectionStart);
+      const after = value.substring(selectionStart);
+      const newValue = `${before}\n- ${after}`;
+
+      setFormData((prev) => ({ ...prev, description: newValue }));
+
+      setTimeout(() => {
+        const field = document.getElementsByName('description')[0];
+        if (field) {
+          field.selectionStart = field.selectionEnd = selectionStart + 3;
+        }
+      }, 0);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -127,6 +182,7 @@ const Modal = () => {
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
+                placeholder="Please enter a title"
                 disabled={isReadOnly}
                 className="w-full bg-[#1e1e1e] border border-gray-700 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500 disabled:opacity-50"
               />
@@ -140,8 +196,11 @@ const Modal = () => {
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                onCompositionStart={handleCompositionStart}
+                placeholder="Please enter the details"
                 disabled={isReadOnly}
-                className="w-full bg-[#1e1e1e] border border-gray-700 rounded-xl px-4 py-3 h-32 text-white outline-none focus:border-blue-500 resize-none disabled:opacity-50 text-sm"
+                className="w-full bg-[#1e1e1e] border border-gray-700 rounded-xl px-4 py-3 h-32 text-white outline-none focus:border-blue-500 resize-none disabled:opacity-50 text-sm custom-scrollbar"
               />
             </div>
 
