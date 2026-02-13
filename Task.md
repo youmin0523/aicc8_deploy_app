@@ -2,11 +2,38 @@
 
 ## Revision History
 
-**[Current Revision: v2.99_260213]**
+**[Current Revision: v3.43_260213]**
 
-- **v2.99_260213**: [front/src/components/v2/CalendarView_v2.jsx]
-  - **구조 개편**: 공휴일 하드코딩 방식을 폐기하고, 연도별 자동 생성 엔진(`getKoreanHolidays`) 도입.
-  - **지능화**: 대체공휴일(주말 겹침 보정) 알고리즘 및 2030년까지의 음력 공휴일 맵핑 데이터를 통해 유지보수 없는 자동 업데이트 실현. (Done)
+- **v3.43_260213**: [front/src/components/Common/Modal.jsx]
+  - **최종 최적화**: 한국어 IME 입력 시 자음 중복 현상(-ㅇ안녕)을 `onCompositionStart` 트리거로 완벽 차단.
+  - **UX 완성**: 입력 전에는 플레이스홀더를 보여주고, 입력 시작 시에만 불렛('- ')이 나타나도록 이중 트리거 시스템 구축. (Done)
+
+- **v3.42_260213**: [front/src/components/Common/Modal.jsx]
+  - **수정**: 첫 글자 입력 시 하이픈 누락 현상 해결 및 자동 삭제 로직 추가. (Done)
+
+- **v3.39_260213**: [front/src/components/Common/Modal.jsx]
+  - **수정**: 가이드 텍스트 겹침 현상 해결 및 하이픈 생성 시점 교정. (Done)
+
+- **v3.37_260213**: [front/src/components/Common/Modal.jsx]
+  - **기능 추가**: Add Todo 시 영문 Placeholder 및 지능형 불렛 포인트(줄바꿈 자동 생성) 시스템 도입. (Done)
+
+- **v3.36_260213**: [front/src/components/Common/Navbar.jsx]
+  - **버그 수정**: 데스크탑/태블릿에서 상단 바 레이어가 사이드바 토글 버튼(<< >>)을 가려 클릭이 되지 않던 레이어 간섭 문제 해결. (Done)
+
+- **v3.35_260213**: [front/src/components/Common/Navbar.jsx]
+  - **UI 정제**: md(768px) 이상에서 상단 바의 로고를 숨기고 사이드바 아이덴티티로 일원화 (브랜드 중복 제거). (Done)
+
+- **v3.34_260213**: [front/src/components/Common/ItemPanel.jsx]
+  - **기능 고도화**: 카드 클릭 시 리스트 실시간 필터링(Total/Pending/Done/Vital) 및 지표별 툴팁 사전 추가. (Done)
+
+- **v3.33_260213**: [front/src/components/Common/Navbar.jsx]
+  - **기능 추가**: Neon Orb 재클릭 시 팝업 닫힘(Toggle-off) 로직 구현. (Done)
+
+- **v3.32_260213**: [front/src/components/Common/Navbar.jsx]
+  - **UX 보정**: Neon Orb 팝업의 위치를 아이콘 하단으로 앵커링하고, 호버 안정성을 위한 '브릿지 레이어' 도입. (Done)
+
+- **v3.31_260213**: [front/src/components/Common/Navbar.jsx]
+  - **레이아우스 보정**: 사이드바 탭 간격 및 행간 슬림화로 가독성 및 정보 밀도 최적화. (Done)
 
 - **v2.98_260213**: [front/src/components/v2/Modal_v2.jsx]
 
