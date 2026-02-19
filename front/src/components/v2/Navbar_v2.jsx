@@ -10,6 +10,7 @@ import {
   MdNextPlan,
   MdClose,
   MdBolt,
+  MdLock,
 } from 'react-icons/md';
 import { logout } from '../../redux/slices/authSlice';
 import {
@@ -336,6 +337,17 @@ const NavbarV2 = () => {
             <MdCalendarMonth size={24} className="text-purple-400" />
             <span className={`${!isSidebarOpen && 'hidden'} font-bold`}>
               Calendar
+            </span>
+          </Link>
+          <Link
+            to="/v2/private"
+            className="flex items-center gap-4 p-3 hover:bg-gray-800 rounded-xl transition-colors"
+          >
+            <MdLock size={24} className="text-rose-400" />
+            <span
+              className={`${!isSidebarOpen && 'hidden'} font-bold text-rose-100`}
+            >
+              Private Space
             </span>
           </Link>
 

@@ -7,6 +7,7 @@ import Proceeding from './components/Proceeding';
 // V2 Components
 import HomeV2 from './components/v2/Home_v2';
 import CalendarViewV2 from './components/v2/CalendarView_v2';
+import PrivateCalendarMain from './components/v2/PrivateCalendar/PrivateCalendarMain';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -36,6 +37,7 @@ const App = () => {
               {/* V2 Routes */}
               <Route path="/v2" element={<HomeV2 />} />
               <Route path="/v2/calendar" element={<CalendarViewV2 />} />
+              <Route path="/v2/private" element={<PrivateCalendarMain />} />
 
               {/* Catch-all or Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -16,6 +16,7 @@ app.get('/', (request, response) => {
 // //* [New Code] V2 전용 라우트만 등록
 app.use(require('./routes/categoryRoutes_v2'));
 app.use(require('./routes/taskRoutes_v2'));
+app.use(require('./routes/privateCalendarRoutes_v2'));
 
 // 4. listen 설정
 // //* [Important] 기존 v1 서버와 충돌을 피하기 위해 8001 포트 사용 권장 (또는 환경변수 조정)

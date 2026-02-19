@@ -31,7 +31,7 @@ const logTaskChange = async (taskId, type, message) => {
 exports.getTasksV2 = async (request, response) => {
   const userId = request.params.userId;
   try {
-    // //* [Modified Code] DB 단에서 'UNION ALL'로 데이터를 합쳐 요청 횟수 최소화
+    // //* [Modified Code] 마감일순(due_date ASC)에서 생성일 최신순(created_at DESC)으로 정렬 기준 변경
     const query = `
       SELECT * FROM (
         SELECT t._id, t.title, t.description, t.due_date, t.iscompleted, t.isimportant, t.categoryid, t.userid, t.created_at, t.updated_at, 
@@ -45,7 +45,7 @@ exports.getTasksV2 = async (request, response) => {
         FROM tasks
         WHERE userid = $1
       ) combined
-      ORDER BY due_date ASC
+      ORDER BY created_at DESC
     `;
     const result = await database.pool.query(query, [userId]);
     return response.status(200).json(result.rows);
