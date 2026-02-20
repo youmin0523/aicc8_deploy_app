@@ -9,11 +9,66 @@ AICC 8 Deploy App의 Back-end API 명세서입니다.
 
 1. [기본 정보 (General Info)](#1-기본-정보-general-info)
 2. [Task API 명세](#2-task-api-명세)
-   - [2.1 할 일 목록 조회 (GET)](#21-할-일-목록-조회-get-tasks)
-   - [2.2 할 일 생성 (POST)](#22-할-일-생성-create-task)
-   - [2.3 할 일 전체 수정 (PUT)](#23-할-일-전체-수정-update-task-fully)
-   - [2.4 할 일 상태 부분 수정 (PATCH)](#24-할-일-상태-부분-수정-update-task-status)
-   - [2.5 할 일 삭제 (DELETE)](#25-할-일-삭제-delete-task)
+3. [Private Calendar API 명세 (v2)](#3-private-calendar-api-명세-v2)
+   - [3.1 다이어리 조회/저장 (Diary)](#31-다이어리-조회저장-diary)
+   - [3.2 습관 관리 (Habits)](#32-습관-관리-habits)
+   - [3.3 일정 관리 (Schedules)](#33-일정-관리-schedules)
+   - [3.4 카테고리 관리 (Categories)](#34-카테고리-관리-categories)
+
+---
+
+## 3. Private Calendar API 명세 (v2)
+
+### 3.1 다이어리 조회/저장 (Diary)
+
+날짜별 개인 일기를 작성하고 저장합니다. (Upsert 방식)
+
+- **조회 URL**: `/api/v2/private/diary?userId={userId}&date={YYYY-MM-DD}` (GET)
+- **저장 URL**: `/api/v2/private/diary` (POST)
+
+#### 🔹 Request Body (POST)
+
+| 필드명       | 타입     | 필수 | 설명                               |
+| :----------- | :------- | :--: | :--------------------------------- |
+| `_id`        | `string` |  No  | 수정 시 기존 ID, 신규 생성 시 비움 |
+| `userId`     | `string` | Yes  | 사용자 고유 ID                     |
+| `entry_date` | `string` | Yes  | 일기 날짜 (YYYY-MM-DD)             |
+| `content`    | `string` | Yes  | 내용                               |
+| `images`     | `array`  |  No  | 이미지 URL/Base64 배열             |
+
+---
+
+### 3.2 습관 관리 (Habits)
+
+- **목록 조회**: `/api/v2/private/habits?userId={userId}&date={date}` (GET)
+- **습관 등록**: `/api/v2/private/habits` (POST)
+- **달성 체크**: `/api/v2/private/habits/toggle` (POST)
+
+#### 🔹 Habit Toggle Body
+
+| 필드명        | 타입      | 필수 | 설명      |
+| :------------ | :-------- | :--: | :-------- |
+| `habitId`     | `string`  | Yes  | 습관 ID   |
+| `date`        | `string`  | Yes  | 체크 날짜 |
+| `isCompleted` | `boolean` | Yes  | 완료 여부 |
+
+---
+
+### 3.3 일정 관리 (Schedules)
+
+- **목록 조회**: `/api/v2/private/schedules?userId={userId}` (GET)
+- **일정 등록**: `/api/v2/private/schedules` (POST)
+
+#### 🔹 Schedule Post Body
+
+| 필드명           | 타입      | 필수 | 설명                       |
+| :--------------- | :-------- | :--: | :------------------------- |
+| `title`          | `string`  | Yes  | 일정 제목                  |
+| `start_date`     | `string`  | Yes  | 시작 시간 (ISO)            |
+| `end_date`       | `string`  | Yes  | 종료 시간 (ISO)            |
+| `is_anniversary` | `boolean` |  No  | 기념일 여부                |
+| `place`          | `string`  |  No  | 장소                       |
+| `attachments`    | `array`   |  No  | 첨부파일 {name, url, type} |
 
 ---
 
@@ -228,7 +283,35 @@ AICC 8 Deploy App의 Back-end API 명세서입니다.
 
 ---
 
-## 🚦 3. UI Event 연동 가이드 (UI Trigger Mapping)
+### 3.4 카테고리 관리 (Categories)
+
+- **목록 조회**: `/api/v2/categories/:userId` (GET)
+- **카테고리 생성**: `/api/v2/categories` (POST)
+- **카테고리 수정**: `/api/v2/categories` (PUT)
+- **카테고리 삭제**: `/api/v2/categories/:itemId` (DELETE)
+
+#### 🔹 Category Body (POST/PUT)
+
+| 필드명   | 타입     | 필수 | 설명            |
+| :------- | :------- | :--: | :-------------- |
+| `name`   | `string` | Yes  | 카테고리 이름   |
+| `color`  | `string` | Yes  | 색상 코드 (HEX) |
+| `userId` | `string` | Yes  | 사용자 고유 ID  |
+
+---
+
+## 🚦 4. UI Event 연동 가이드 (V2 UI Trigger)
+
+| UI 요소 (Element)  | 액션 (Action) | 트리거 API              | 비고                            |
+| :----------------- | :------------ | :---------------------- | :------------------------------ |
+| **Calendar Tile**  | 클릭          | `fetchDiaryThunk`       | 해당 날짜의 일기 데이터 로드    |
+| **Habit Checkbox** | 토글          | `toggleHabitCheckThunk` | 습관 달성 로그 기록             |
+| **Schedule Modal** | 저장          | `addScheduleThunk`      | 신규 일정 및 첨부파일 서버 전송 |
+| **Category Tag**   | 삭제 클릭     | `deleteCategory`        | 해당 카테고리 영구 삭제         |
+
+---
+
+## 🚦 5. UI Event 연동 가이드 (V1 UI Trigger Mapping)
 
 프론트엔드 UI 요소와 API 간의 연쇄 반응 정의입니다.
 

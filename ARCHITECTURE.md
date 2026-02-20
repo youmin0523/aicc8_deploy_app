@@ -1,145 +1,103 @@
 # 🏗️ System Architecture & Data Flow
 
-**[Version: v2.10_260211]**
+**[Version: v3.0_20260219]**
 
-이 문서는 `aicc8_deploy_app`의 전체 시스템 구조와 데이터 흐름, 그리고 컴포넌트 간 상호작용을 시각적으로 상세히 기술합니다.
+이 문서는 `aicc8_deploy_app`의 전체 시스템 구조와 데이터 흐름, 특히 **Private Calendar (v2)** 시스템의 복합적인 상호작용을 상세히 기술합니다.
 
 ---
 
-## 1. System Architecture Diagram
-
-클라이언트(Client), 서버(Server), 데이터베이스(Database) 간의 요청 및 응답 흐름을 나타낸 다이어그램입니다.
+## 1. System Architecture Diagram (Full-Stack)
 
 ```mermaid
 graph TD
     User[User (Browser)] -->|Interaction| UI[React UI Components]
     UI -->|Dispatch Action| Redux[Redux Store]
 
-    subgraph Frontend Logic
-    Redux -->|Select State| UI
-    Redux -->|Async Thunk| API[API Service (Axios/Fetch)]
+    subgraph "Frontend Layer (V2 Private)"
+    Redux -->|Selection| PC_Main[PrivateCalendarMain]
+    PC_Main -->|Tab Switching| Tabs[Diary/Habit/Todo/Schedule]
+    Tabs -->|Async Thunk| API_V2[Private API Service]
     end
 
-    API -->|HTTP Request (JSON)| Server[Express Server]
+    API_V2 -->|HTTP Request| Server[Express Server]
 
-    subgraph Backend Logic
-    Server -->|Routing| Router[Express Router]
-    Router -->|Business Logic| Controller[Get/Post Controllers]
-    Controller -->|SQL Query| DB[(PostgreSQL Database)]
+    subgraph "Backend Layer (Mixed Architecture)"
+    Server -->|Router| R2[PrivateCalendarRoutes_v2]
+    R2 -->|Controller| C2[PrivateCalendarControllers_v2]
+    C2 -->|SQL| DB2[(PostgreSQL - Private Tables)]
     end
 
-    DB -->|Result Set| Controller
-    Controller -->|JSON Response| API
-    API -->|Update State| Redux
+    DB2 -->|JSON Results| C2
+    C2 -->|Response| API_V2
+    API_V2 -->|Update State| Redux
 ```
 
 ---
 
-## 2. Data Flow Analysis (Variable Lifecycle)
-
-주요 데이터(변수)가 시스템 내에서 생성, 가공, 소멸되는 전체 생명주기(Lifecycle)를 추적합니다. **데이터 격리(Data Isolation)** 이슈나 **렌더링 버그**를 해결할 때 필수적인 참조 자료입니다.
+## 2. Data Flow Analysis (Private Calendar Focus)
 
 ### 2.1 Critical Data Journey Table
 
-| 변수명 (Variable)       | 생성 위치 (Origin)        | 변경/가공 로직 (Mutation)                         | 참조/최종 목적지 (Destination)      | 비고 (Note)                                                |
-| :---------------------- | :------------------------ | :------------------------------------------------ | :---------------------------------- | :--------------------------------------------------------- |
-| **userId (`sub`)**      | `GoogleLogin` (Auth)      | `jwtDecode` -> `authSlice` (Redux State)          | `ItemPanel.jsx` (API Request Param) | **[Core]** 모든 데이터 조회/생성의 기준 키 (Isolation Key) |
-| **isSidebarOpen**       | `Navbar.jsx` (State)      | `toggleSidebar` (Click), `Resize` (Window Event)  | `nav` className (CSS Visibility)    | 모바일/태블릿 반응형 토글 제어                             |
-| **getTasksData**        | `apiSlice` (Redux)        | `fetchGetItem` (Async API Call)                   | `ItemPanel.jsx` (Rendering List)    | `null` 상태에 대한 방어 로직(Safe Guard) 필수              |
-| **filteredTasks**       | `ItemPanel.jsx` (Derived) | `filter(isCompleted)` -> `filter(isImportant)`    | `Item.jsx` (Map Render)             | 렌더링 직전의 최종 가공 데이터                             |
-| **isLogoutConfirmOpen** | `Navbar.jsx` (State)      | `handleLogoutClick` (Trigger) -> `confirm/cancel` | `Logout Modal` (Conditional Render) | **[Safety]** 오터치 방지 로그아웃 컨펌 창                  |
-| **isTodayOpen**         | `Navbar.jsx` (State)      | `setIsTodayOpen` (Toggle)                         | `Today's Todo` (Collapsible)        | 사이드바 내 섹션 접힘/펼침 상태 저장                       |
+| 변수명 (Variable) | 발생/생성 위치 | 변화/가공 로직 | 참조/최종 목적지 |
+|:---|:---|:---|:---|
+| **userId** | `GoogleLogin` | Redux `authSlice` 저장 | 모든 API 호출의 필수 Param |
+| **selectedDate** | `CalendarTab` (Click) | `setSelectedDate` (Redux) | `fetchDiaryThunk`, `getHabit` 필터링 기준 |
+| **currentDiary** | `DiaryTab` | `fetchDiaryThunk` -> Redux 저장 | 다이어리 편집기 및 프리뷰 렌더링 |
+| **habits** | `HabitTab` | `toggleHabitCheckThunk` (Completed 변환) | 오늘 습관 리스트 및 달성률 통계 |
+| **attachments** | `ScheduleTab` | `FileReader` (Base64) -> 업로드 | 일정 상세 모달 및 목록 내 썸네일 |
 
 ---
 
-## 3. Execution Flow Map (Critical Path)
-
-사용자가 애플리케이션에 접속하여 로그인을 수행하고, 본인의 할 일 목록을 확인하기까지의 **실행 경로(Critical Path)**입니다.
-
-1.  **Frontend Initialization (`main.jsx` -> `App.jsx`)**
-    - Redux Store 생성 및 Provider 주입.
-    - Router 설정 완료.
-
-2.  **Authentication (`Navbar.jsx`)**
-    - 사용자: 'Login' 버튼 클릭 -> Google OAuth 팝업.
-    - **Action**: `GoogleLogin.onSuccess` -> `jwtDecode` -> `dispatch(login(decoded))`.
-    - **State Change**: `authSlice.authData`에 유저 정보(`sub`, `name` 등) 저장.
-
-3.  **Data Fetching (`ItemPanel.jsx`)**
-    - **Effect**: `useEffect`가 `userKey`(`sub`) 변화를 감지.
-    - **Dispatch**: `dispatch(fetchGetItem(userKey))` 실행.
-    - **API Call**: `GET /get_tasks/:userId` 요청 전송.
-
-4.  **Backend Processing (`index.js` -> `getControllers.js`)**
-    - **Route**: `/get_tasks/:userId` 엔드포인트 도달.
-    - **Query**: `SELECT * FROM tasks WHERE userId = $1 ORDER BY created_at DESC`.
-    - **Response**: 조회된 Task 배열을 JSON 형식(200 OK)으로 반환.
-
-5.  **UI Rendering (`ItemPanel.jsx`)**
-    - **Update**: Redux Store의 `getItemData`가 최신 데이터로 업데이트됨.
-    - **Filtering**: `filteredCompleted`, `filteredImportant` Props에 따라 배열 필터링.
-    - **Map**: `<Item />` 컴포넌트 반복 렌더링.
-
----
-
-## 4. Sequence Diagram (User Interaction Flow)
-
-사용자와 시스템 간의 상호작용 순서를 시계열(Time Series)로 표현한 상세 다이어그램입니다.
+## 3. Sequence Diagram (Day-to-Day Life Logging)
 
 ```mermaid
 sequenceDiagram
     actor User
-    participant FE as Frontend (React/Redux)
-    participant API as Backend API (Express)
-    participant DB as Database (PostgreSQL)
+    participant Main as PrivateCalendarMain
+    participant Redux as Redux (PC Slice)
+    participant API as Backend (V2 API)
+    participant DB as DB (Postgre)
 
-    Note over User, FE: 1. Authentication Phase
-    User->>FE: Access App & Click Login
-    FE->>FE: Google OAuth Login Success
-    FE->>FE: Extract 'sub' (userId) from Token
+    User->>Main: Click Date on Calendar
+    Main->>Redux: dispatch(setSelectedDate(date))
+    
+    par Data Sync
+        Redux->>API: GET /diary?date={date}
+        API->>DB: SELECT diary FROM private_diaries
+        DB-->>API: Diary Data
+        API-->>Redux: Update currentDiary
+    and Habit Fetch
+        Redux->>API: GET /habits?date={date}
+        API->>DB: SELECT habits WITH log Join
+        DB-->>API: Habit List + isCompleted
+        API-->>Redux: Update habits
+    end
 
-    Note over FE, DB: 2. Data Fetching Phase
-    FE->>FE: Dispatch fetchGetItem(userId)
-    FE->>API: GET /get_tasks/{userId}
-    activate API
-
-    API->>API: Validate userId param
-    API->>DB: SELECT * FROM tasks WHERE userId = $1 ORDER BY created_at DESC
-    activate DB
-    DB-->>API: Return Task Rows (List)
-    deactivate DB
-
-    API-->>FE: 200 OK (JSON Array)
-    deactivate API
-
-    Note over FE: 3. Rendering Phase
-    FE->>FE: Update Redux Store (getItemData)
-    FE->>FE: Apply Filters (Completed/Important)
-    FE-->>User: Render Task List (ItemPanel)
-
-    Note over User, FE: 4. Safe Logout Phase (New)
-    User->>FE: Click Logout Button
-    FE->>FE: Set isLogoutConfirmOpen(true)
-    FE-->>User: Show Dark Confirmation Modal
-    User->>FE: Click 'Logout' in Modal
-    FE->>FE: Dispatch Logout & Clear Auth State
-    FE-->>User: Redirect to Home (Auth Required)
+    User->>Main: Toggle Habit Check
+    Main->>API: POST /habits/toggle (habitId, date)
+    API->>DB: INSERT/DELETE private_habit_logs
+    DB-->>API: Success
+    API-->>Redux: Update habit.is_completed locally
+    Redux-->>User: Visual Feedback (Icon Change)
 ```
 
 ---
 
-## 5. Directory & File Relationship
+## 4. Directory & File Relationship (V2)
 
-파일 간의 물리적/논리적 연결 관계를 설명합니다.
+- **`front/src/components/v2/PrivateCalendar/`**
+  - `PrivateCalendarMain.jsx`: 전체 레이아웃 및 탭 스위칭 (Hub 역할).
+  - `CalendarTab.jsx`: 통합된 날짜 선택 브라우저 및 일정 로드.
+  - `ScheduleTab.jsx`: 복합 일정 등록 (첨부파일, 기념일, 반복 설정 지원).
+- **`front/src/redux/slices/privateCalendarSlice.js`**
+  - V2의 모든 지엽적 상태를 통합 관리하는 Single Source of Truth.
+- **`back/controllers/privateCalendarControllers_v2.js`**
+  - 고유한 테이블(`private_diaries`, `private_habits`, `private_schedules`)을 다루는 전용 비즈니스 로직 담당.
 
-- **`front/src/components/Common/Navbar.jsx`**
-  - **역할**: 레이아웃의 핵심, 사이드바 상태(`isDesktopOpen`) 관리.
-  - **연결**: `App.jsx`에서 호출되며, `authSlice`를 통해 로그인 상태를 공유함.
+---
 
-- **`front/src/components/Common/ItemPanel.jsx`**
-  - **역할**: 할 일 목록을 보여주는 메인 뷰포트.
-  - **연결**: `apiSlice.js`의 액션을 디스패치하여 데이터를 가져오고, `Item.jsx`를 자식으로 가짐.
+## 5. [Full-Stack Sync Check]
 
-- **`back/controllers/getControllers.js`**
-  - **역할**: 프론트엔드의 요청을 받아 실제 비즈니스 로직(DB 조회)을 수행.
-  - **연결**: `database.js` 모듈을 의존성으로 가짐.
+- **[Backend]**: JSON.stringify를 통한 `images` 및 `attachments` 데이터의 정규화 완료.
+- **[Frontend]**: 비동기 호출 중 `loading` 상태 처리를 통한 UX 블로킹 방지.
+- **[Aesthetics]**: Vanilla CSS를 통한 글래스모피즘(backdrop-filter) 디자인 일관성 유지.
