@@ -54,21 +54,21 @@ const PrivateCalendarMain = () => {
     <div className="flex bg-[#0f1115] min-h-screen text-gray-200 font-sans">
       <NavbarV2 />
 
-      <main className="flex-1 flex flex-col h-screen overflow-hidden p-8">
-        {/* 헤더 섹션 */}
-        <header className="flex justify-between items-center mb-10">
+      <main className="flex-1 flex flex-col min-h-screen overflow-y-auto pt-4 px-10 pb-10 custom-scrollbar">
+        {/* 헤더 섹션 - 폰트 사이즈 대폭 축소하여 상단 공간 확보 */}
+        <header className="flex justify-between items-center mb-3 shrink-0">
           <div>
-            <h1 className="text-4xl font-black italic tracking-tighter uppercase text-white mb-2">
+            <h1 className="text-2xl font-black italic tracking-tighter uppercase text-white mb-1">
               Private <span className="text-blue-500">Calendar</span>
             </h1>
-            <p className="text-gray-500 text-sm font-bold tracking-widest uppercase">
+            <p className="text-gray-500 text-[10px] font-bold tracking-[0.4em] uppercase opacity-70">
               Personal Life Log & Achievement
             </p>
           </div>
         </header>
 
-        {/* 컨텐츠 영역 - CalendarTab으로 단일 고정 */}
-        <div className="flex-1 bg-[#16181d]/50 backdrop-blur-3xl rounded-[3rem] border border-white/5 p-10 shadow-2xl overflow-hidden flex flex-col">
+        {/* 컨텐츠 영역 - CalendarTab으로 단일 고정, 높이 제약 해제 */}
+        <div className="flex-1 bg-[#16181d]/50 backdrop-blur-3xl rounded-[3rem] border border-white/5 p-1 transition-all">
           <CalendarTab />
         </div>
       </main>

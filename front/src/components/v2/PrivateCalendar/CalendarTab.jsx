@@ -114,75 +114,98 @@ const CalendarTab = () => {
 
   return (
     <div className="flex gap-8 h-full w-full overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-1000 relative">
-      {/* 프리미엄 배경 광 처리 */}
-      <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-purple-600/5 rounded-full blur-[100px] pointer-events-none" />
+      {/* 프리미엄 배경 광 처리 - 더 몽환적으로 수정 */}
+      <div className="absolute top-[-10%] left-[-5%] w-[800px] h-[800px] bg-blue-600/10 rounded-full blur-[150px] pointer-events-none animate-pulse" />
+      <div
+        className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[130px] pointer-events-none animate-pulse"
+        style={{ animationDelay: '2s' }}
+      />
 
-      {/* 캘린더 타일 높이 및 프리미엄 스타일 오버라이드 (압축 버전) */}
+      {/* 캘린더 스타일 오버라이드 (시인성 강화 버전) */}
       <style>{`
         .v2-calendar .react-calendar__month-view__days {
           grid-auto-rows: 78px !important;
           background-color: transparent !important;
           border: none !important;
-          gap: 3px !important;
+          gap: 6px !important;
         }
         .v2-calendar .react-calendar__tile {
           height: 78px !important;
           max-height: 78px !important;
           background: rgba(255, 255, 255, 0.02) !important;
-          border: 1px solid rgba(255, 255, 255, 0.04) !important;
-          border-radius: 12px !important;
-          transition: all 0.3s ease !important;
-          padding: 6px !important;
+          border: 1px solid rgba(255, 255, 255, 0.06) !important;
+          border-radius: 20px !important;
+          transition: all 0.5s cubic-bezier(0.2, 1, 0.2, 1) !important;
+          padding: 10px !important;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: flex-start !important;
+          align-items: center !important;
         }
         .v2-calendar .react-calendar__navigation {
-          margin-bottom: 8px !important;
-          height: 36px !important;
+          margin-bottom: 16px !important;
+          height: 48px !important;
+          background: rgba(255, 255, 255, 0.03);
+          padding: 6px;
+          border-radius: 22px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          backdrop-blur: 10px;
         }
         .v2-calendar .react-calendar__navigation button {
-          min-width: 32px !important;
-          height: 32px !important;
-          border-radius: 10px !important;
-        }
-        .v2-calendar .react-calendar__tile:hover {
-          background: rgba(255, 255, 255, 0.08) !important;
-          border-color: rgba(255, 255, 255, 0.2) !important;
-          transform: translateY(-2px) scale(1.02);
-          box-shadow: 0 10px 20px rgba(0,0,0,0.4);
-        }
-        .v2-calendar .react-calendar__tile--active {
-          background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(124, 58, 237, 0.2)) !important;
-          border-color: #3b82f6 !important;
-          box-shadow: 0 0 20px rgba(59, 130, 246, 0.3) !important;
-        }
-        .v2-calendar .react-calendar__navigation button {
-          background: rgba(255, 255, 255, 0.03) !important;
-          border: 1px solid rgba(255, 255, 255, 0.05) !important;
-          border-radius: 14px !important;
-          color: #888 !important;
+          min-width: 44px !important;
+          height: 42px !important;
+          border-radius: 16px !important;
+          font-weight: 900 !important;
+          font-size: 16px !important;
+          color: rgba(255, 255, 255, 0.6) !important;
         }
         .v2-calendar .react-calendar__navigation button:hover {
+          background: rgba(255, 255, 255, 0.05) !important;
+          color: white !important;
+        }
+        .v2-calendar .react-calendar__tile:hover {
           background: rgba(255, 255, 255, 0.1) !important;
-          color: #fff !important;
+          border-color: rgba(59, 130, 246, 0.5) !important;
+          transform: translateY(-6px) scale(1.02);
+          box-shadow: 0 25px 50px rgba(0,0,0,0.6), 0 0 30px rgba(59, 130, 246, 0.15);
+          z-index: 10;
+        }
+        .v2-calendar .react-calendar__tile--active {
+          background: linear-gradient(135deg, rgba(37, 99, 235, 0.3), rgba(124, 58, 237, 0.3)) !important;
+          border-color: rgba(59, 130, 246, 0.8) !important;
+          box-shadow: 0 0 40px rgba(59, 130, 246, 0.3) !important;
         }
         .v2-calendar .react-calendar__navigation__label {
-          font-weight: 900 !important;
-          letter-spacing: 0.2em !important;
+          font-size: 15px !important;
+          letter-spacing: 0.4em !important;
+          color: white !important;
           text-transform: uppercase !important;
-          color: #fff !important;
-          background: transparent !important;
-          border: none !important;
+          font-weight: 900 !important;
+        }
+        .v2-calendar .react-calendar__month-view__weekdays {
+          margin-bottom: 8px !important;
+          font-weight: 900 !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.1em !important;
+          font-size: 11px !important;
+          color: rgba(255, 255, 255, 0.3) !important;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
         }
       `}</style>
 
-      {/* 좌측 섹션: 캘린더 + 다이어리 */}
-      <div className="flex-[7.4] flex flex-col gap-4 min-h-0 min-w-0 h-full relative z-10">
-        {/* 캘린더 카드 */}
-        <div className="bg-[#111318]/60 backdrop-blur-2xl p-4 rounded-[2.5rem] border border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.6)] overflow-hidden relative group flex-1 transition-all duration-500 hover:border-white/20">
-          {/* 카드 베벨 효과 */}
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      {/* [LAYOUT] 좌측 메인 섹션 - 간격 최적화 */}
+      <div className="flex-[6.8] flex flex-col gap-6 min-h-0 min-w-0 h-full relative z-10 pb-10">
+        {/* 캘린더 카드 - 상단 정렬 밀착을 위해 패딩 및 마진 재조정 */}
+        <div className="flex-none bg-[#111318]/40 backdrop-blur-3xl p-8 rounded-[4rem] border border-white/10 shadow-[0_50px_120px_rgba(0,0,0,0.7)] relative group transition-all duration-700 hover:border-blue-500/30 min-h-fit">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
 
-          <div className="flex-1 w-full flex items-center justify-center py-2">
+          <div className="w-full h-full flex items-center justify-center">
             <Calendar
               className="v2-calendar !w-full"
               onChange={handleDateChange}
@@ -195,97 +218,87 @@ const CalendarTab = () => {
           </div>
         </div>
 
-        {/* 다이어리 섹션 - 더 슬림하게 */}
-        <div className="h-[130px] min-h-[130px] bg-[#111318]/60 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 p-5 flex flex-col gap-3 overflow-hidden relative shadow-2xl group transition-all duration-500 hover:border-blue-500/30">
+        {/* 다이어리 섹션 - 캘린더 하단에 자연스럽게 배치 */}
+        <div className="flex-none min-h-[400px] bg-[#111318]/60 backdrop-blur-3xl rounded-[4rem] border border-white/10 p-10 flex flex-col gap-6 relative shadow-2xl group transition-all duration-700 hover:border-emerald-500/30">
           <header className="flex justify-between items-center shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-blue-600/20 text-blue-500 rounded-xl shadow-[0_0_15px_rgba(37,99,235,0.2)]">
-                <MdBook size={20} />
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-400 rounded-3xl flex items-center justify-center shadow-[0_15px_30px_rgba(16,185,129,0.15)] border border-emerald-500/10">
+                <MdBook size={28} />
               </div>
               <div>
-                <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-white">
+                <h3 className="text-base font-black uppercase tracking-[0.6em] text-white">
                   Daily Life Log
                 </h3>
-                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
-                  {selectedDate}
+                <p className="text-[11px] text-gray-500 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  Temporal Record: {selectedDate}
                 </p>
               </div>
             </div>
             <button
               onClick={handleSaveDiary}
-              className="group flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all duration-300 shadow-[0_10px_20px_rgba(5,150,105,0.2)] hover:shadow-[0_15px_30px_rgba(5,150,105,0.4)] hover:scale-105 active:scale-95"
+              className="group flex items-center gap-4 px-10 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-[12px] transition-all duration-500 shadow-[0_10px_30px_rgba(5,150,105,0.4)] hover:shadow-[0_20px_50px_rgba(5,150,105,0.6)] hover:scale-105 active:scale-95"
             >
               <MdSave
-                size={16}
+                size={20}
                 className="group-hover:rotate-12 transition-transform"
               />
-              Save Record
+              Synchronize Record
             </button>
           </header>
-          <div className="flex-1 bg-black/40 rounded-[2rem] p-5 border border-white/5 group-focus-within:border-blue-500/40 transition-all shadow-inner">
+
+          <div className="flex-1 bg-black/40 rounded-[3rem] p-8 border border-white/5 focus-within:border-emerald-500/40 transition-all duration-500 shadow-inner overflow-hidden min-h-[250px]">
             <textarea
               value={diaryContent}
               onChange={(e) => setDiaryContent(e.target.value)}
-              placeholder="Record the fragments of your journey..."
-              className="w-full h-full bg-transparent border-none text-gray-200 focus:outline-none resize-none text-base leading-relaxed custom-scrollbar placeholder:text-gray-700 font-medium"
+              placeholder="여정의 조각들을 기록하세요..."
+              className="w-full h-full bg-transparent border-none text-gray-200 focus:outline-none resize-none text-xl leading-relaxed custom-scrollbar placeholder:text-gray-800 font-medium"
             />
           </div>
         </div>
       </div>
 
-      {/* 우측 섹션: 리스트 대시보드 */}
-      <div className="flex-[2.6] flex flex-col gap-4 overflow-hidden min-w-0 h-full relative z-10">
-        {/* 습관 (Habits) */}
-        <section className="flex-1 bg-[#111318]/60 backdrop-blur-2xl rounded-[3rem] border border-white/10 p-7 flex flex-col overflow-hidden shadow-2xl transition-all duration-500 hover:border-emerald-500/30">
-          <header className="flex justify-between items-center mb-6 shrink-0 border-b border-white/5 pb-4">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500 flex items-center gap-2">
+      {/* 우측 섹션: 통합 대시보드 사이드바 (슬림화 및 고밀도) */}
+      <div className="flex-[3.5] flex flex-col gap-5 overflow-hidden min-w-0 h-full relative z-10">
+        {/* Habits (Habits) - 상단 배치 */}
+        <section className="flex-[3.5] bg-[#111318]/40 backdrop-blur-2xl rounded-[3rem] border border-white/10 p-7 flex flex-col overflow-hidden shadow-2xl transition-all duration-700 hover:border-emerald-500/30">
+          <header className="flex justify-between items-center mb-6 shrink-0">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400 flex items-center gap-2">
               <MdEmojiEvents
                 size={18}
                 className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"
-              />{' '}
-              Habits
+              />
+              Neural Protocol
             </h3>
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] font-black text-white italic">
-                {Math.round(
-                  (habits.filter((h) => h.is_completed).length /
-                    (habits.length || 1)) *
-                    100,
-                )}
-                %
-              </span>
-              <div className="w-12 h-1 bg-emerald-950 rounded-full mt-1 overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)] transition-all duration-1000"
-                  style={{
-                    width: `${(habits.filter((h) => h.is_completed).length / (habits.length || 1)) * 100}%`,
-                  }}
-                />
-              </div>
+            <div className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-[9px] font-black tracking-widest border border-emerald-500/20">
+              {Math.round(
+                (habits.filter((h) => h.is_completed).length /
+                  (habits.length || 1)) *
+                  100,
+              )}
+              % SYNC
             </div>
           </header>
-          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1">
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-2">
             {habits.length > 0 ? (
               habits.map((habit) => (
                 <div
                   key={habit._id}
-                  className="group flex items-center justify-between p-4 bg-white/[0.03] hover:bg-emerald-500/[0.08] rounded-2xl border border-white/5 hover:border-emerald-500/40 transition-all duration-300 cursor-pointer"
+                  className="group flex items-center justify-between p-4 bg-white/[0.02] hover:bg-emerald-500/[0.08] rounded-2xl border border-white/5 hover:border-emerald-500/30 transition-all duration-300 cursor-pointer"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${habit.is_completed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-600'}`}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-500 ${habit.is_completed ? 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-white/5 text-gray-600'}`}
                     >
                       {habit.is_completed ? (
-                        <MdCheckCircle
-                          size={22}
-                          className="drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]"
-                        />
+                        <MdCheckCircle size={18} />
                       ) : (
-                        <MdRadioButtonUnchecked size={22} />
+                        <MdRadioButtonUnchecked size={18} />
                       )}
                     </div>
                     <span
-                      className={`text-sm font-bold tracking-tight ${habit.is_completed ? 'text-gray-500 line-through' : 'text-gray-200'} transition-colors`}
+                      className={`text-[13px] font-bold tracking-tight ${habit.is_completed ? 'text-gray-600 line-through' : 'text-gray-300'}`}
                     >
                       {habit.habit_name}
                     </span>
@@ -294,7 +307,7 @@ const CalendarTab = () => {
               ))
             ) : (
               <div className="h-full flex flex-col items-center justify-center opacity-10">
-                <MdEmojiEvents size={50} />
+                <MdEmojiEvents size={40} />
                 <p className="text-[8px] font-black uppercase tracking-[0.3em] mt-2">
                   No Active Protocols
                 </p>
@@ -303,26 +316,27 @@ const CalendarTab = () => {
           </div>
         </section>
 
-        {/* 일정 (Timeline) */}
-        <section className="flex-1 bg-[#111318]/60 backdrop-blur-2xl rounded-[3rem] border border-white/10 p-7 flex flex-col overflow-hidden shadow-2xl transition-all duration-500 hover:border-purple-500/30">
-          <header className="flex justify-between items-center mb-6 shrink-0 border-b border-white/5 pb-4">
+        {/* Timeline (Timeline) - 중간 배치 */}
+        <section className="flex-[3.5] bg-[#111318]/40 backdrop-blur-2xl rounded-[3rem] border border-white/10 p-7 flex flex-col overflow-hidden shadow-2xl transition-all duration-700 hover:border-purple-500/30">
+          <header className="flex justify-between items-center mb-6 shrink-0">
             <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-purple-400 flex items-center gap-2">
               <MdEvent
                 size={18}
                 className="drop-shadow-[0_0_8px_rgba(167,139,250,0.5)]"
-              />{' '}
-              Timeline
+              />
+              Event Horizon
             </h3>
-            <span className="px-3 py-1 bg-purple-500/10 text-purple-400 rounded-full text-[9px] font-black tracking-widest border border-purple-500/20 shadow-[0_0_15px_rgba(167,139,250,0.1)]">
-              Today:{' '}
+            <span className="text-[9px] font-black text-purple-400/60 uppercase">
               {
                 schedules.filter((s) =>
                   isSameDay(parseISO(s.start_date), new Date(selectedDate)),
                 ).length
-              }
+              }{' '}
+              Nodes
             </span>
           </header>
-          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">
             {schedules.filter((s) =>
               isSameDay(parseISO(s.start_date), new Date(selectedDate)),
             ).length > 0 ? (
@@ -333,62 +347,55 @@ const CalendarTab = () => {
                 .map((s) => (
                   <div
                     key={s._id}
-                    className="p-5 bg-white/[0.03] hover:bg-purple-600/[0.08] rounded-2xl border border-white/5 hover:border-purple-500/40 transition-all duration-300 cursor-pointer group"
+                    className="p-4 bg-white/[0.02] hover:bg-purple-600/[0.08] rounded-[1.5rem] border border-white/5 hover:border-purple-500/30 transition-all duration-300 group"
                   >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-1.5 h-4 rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.8)]" />
-                      <span className="text-sm font-black text-gray-100 group-hover:text-purple-300 transition-colors truncate">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-1 h-3 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
+                      <span className="text-[12px] font-black text-gray-200 truncate group-hover:text-purple-300 transition-colors">
                         {s.title}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2 px-3 py-1 bg-black/40 rounded-full border border-white/5">
-                        <MdAccessTime
-                          size={14}
-                          className="text-purple-500/60"
-                        />
-                        <span className="text-[10px] text-gray-400 font-black tracking-tighter uppercase whitespace-nowrap">
-                          {format(parseISO(s.start_date), 'HH:mm')} —{' '}
-                          {format(parseISO(s.end_date), 'HH:mm')}
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-2 text-[9px] font-bold text-gray-500 uppercase tracking-tighter">
+                      <MdAccessTime size={12} className="text-purple-500/40" />
+                      {format(parseISO(s.start_date), 'HH:mm')} —{' '}
+                      {format(parseISO(s.end_date), 'HH:mm')}
                     </div>
                   </div>
                 ))
             ) : (
               <div className="h-full flex flex-col items-center justify-center opacity-10">
-                <MdEvent size={50} />
+                <MdEvent size={40} />
                 <p className="text-[8px] font-black uppercase tracking-[0.3em] mt-2">
-                  The Void is Still
+                  Temporal Void
                 </p>
               </div>
             )}
           </div>
         </section>
 
-        {/* 할일 (Tasks) */}
-        <section className="h-[140px] bg-[#111318]/80 backdrop-blur-3xl rounded-[3rem] border border-white/10 p-7 flex flex-col overflow-hidden shadow-2xl shrink-0 group">
+        {/* Neural Tasks (할일) - 하단 배치 */}
+        <section className="flex-[3] bg-[#111318]/80 backdrop-blur-3xl rounded-[3rem] border border-white/10 p-7 flex flex-col overflow-hidden shadow-2xl transition-all duration-700 hover:border-blue-500/30">
           <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-400 flex items-center gap-2 mb-4">
             <MdList
               size={18}
               className="drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
-            />{' '}
+            />
             Neural Tasks
           </h3>
-          <div className="flex-1 flex flex-col items-center justify-center bg-black/50 rounded-2xl border border-white/5 relative overflow-hidden group-hover:bg-blue-600/[0.03] transition-colors">
-            <div className="absolute inset-x-0 bottom-0 h-1 bg-blue-600/10 animate-pulse" />
+          <div className="flex-1 flex flex-col items-center justify-center bg-black/40 rounded-2xl border border-white/5 relative overflow-hidden group hover:bg-blue-600/[0.05] transition-all">
+            <div className="absolute inset-x-0 bottom-0 h-1 bg-blue-600/20 animate-pulse" />
             <MdList
-              size={24}
-              className="mb-1 text-blue-500/10 group-hover:text-blue-500/30 transition-all duration-700"
+              size={32}
+              className="mb-2 text-blue-500/10 group-hover:text-blue-500/30 transition-all duration-700 group-hover:scale-110"
             />
-            <span className="text-[8px] font-black text-gray-800 uppercase tracking-[0.3em]">
-              Sync in progress...
+            <span className="text-[9px] font-black text-gray-700 group-hover:text-blue-500/40 uppercase tracking-[0.4em] transition-all">
+              Awaiting Input...
             </span>
           </div>
         </section>
       </div>
 
-      {/* 프리미엄 플로팅 액션 버튼 (FAB) */}
+      {/* 프리미엄 플로팅 액션 버튼 (FAB) - 기존 유지하며 스타일 약간 보정 */}
       <div className="fixed bottom-12 right-12 flex flex-col items-end gap-5 z-[9999] group">
         <div className="flex flex-col gap-4 opacity-0 translate-y-10 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1)">
           {[
@@ -427,12 +434,12 @@ const CalendarTab = () => {
               style={{ transitionDelay: `${idx * 50}ms` }}
               onClick={() => toast.info(`${item.label} matrix initialized`)}
             >
-              <span className="px-4 py-2 bg-black/90 backdrop-blur-2xl rounded-xl text-[10px] font-black uppercase tracking-[0.3em] text-white opacity-0 group-hover/btn:opacity-100 transition-all duration-300 border border-white/10 shadow-2xl translate-x-4 group-hover/btn:translate-x-0">
+              <span className="px-5 py-2.5 bg-black/90 backdrop-blur-3xl rounded-xl text-[10px] font-black uppercase tracking-[0.4em] text-white opacity-0 group-hover/btn:opacity-100 transition-all duration-500 border border-white/10 shadow-2xl translate-x-4 group-hover/btn:translate-x-0">
                 {item.label}
               </span>
               <div
-                className={`w-14 h-14 bg-gradient-to-br ${item.color} rounded-[1.2rem] flex items-center justify-center text-white shadow-xl hover:scale-115 hover:-rotate-6 active:scale-90 transition-all duration-500 border border-white/20`}
-                style={{ boxShadow: `0 15px 30px ${item.shadow}` }}
+                className={`w-14 h-14 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center text-white shadow-xl hover:scale-115 hover:-rotate-6 active:scale-95 transition-all duration-500 border border-white/20`}
+                style={{ boxShadow: `0 15px 35px ${item.shadow}` }}
               >
                 {React.cloneElement(item.icon, { size: 24 })}
               </div>
@@ -440,9 +447,8 @@ const CalendarTab = () => {
           ))}
         </div>
 
-        {/* 메인 플러스 버튼 */}
-        <button className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-[2rem] flex items-center justify-center text-white shadow-[0_20px_40px_rgba(37,99,235,0.4)] hover:shadow-[0_25px_50px_rgba(37,99,235,0.6)] hover:scale-110 active:scale-90 transition-all duration-500 group-hover:rotate-45 border border-white/20 relative">
-          <div className="absolute inset-0 bg-white/20 rounded-[2rem] animate-ping opacity-20 group-hover:hidden" />
+        <button className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-[2rem] flex items-center justify-center text-white shadow-[0_20px_50px_rgba(37,99,235,0.5)] hover:shadow-[0_30px_60px_rgba(37,99,235,0.7)] hover:scale-110 active:scale-90 transition-all duration-700 group-hover:rotate-45 border border-white/20 relative">
+          <div className="absolute inset-0 bg-white/30 rounded-[2rem] animate-ping opacity-20 group-hover:hidden" />
           <span className="text-3xl font-light">+</span>
         </button>
       </div>

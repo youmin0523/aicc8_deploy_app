@@ -1,86 +1,57 @@
-# Implementation Plan: Private Calendar System
+# 🏗️ Implementation Plan: Private Calendar & Life-Log System
 
-## 1. 개요 (Overview)
+## 1. 개요 및 설계 철학
 
-본 계획서는 사용자의 개인적인 생활을 기록하고 관리할 수 있는 **Private Calendar** 모듈의 기술적 구현 상세를 다룹니다. 업무 중심의 기존 시스템과 분리된 데이터 구조를 가지며, '다이어리'와 '습관' 기능을 중심으로 1차 구현을 진행합니다.
+사용자의 파편화된 일상 데이터를 체계적으로 집약하는 '디지털 기억 공간'으로, **수직 공간 효율성**과 **데이터의 명료도(Clarity)**를 설계의 최우선 가치로 삼습니다.
 
-## 2. 데이터 아키텍처 (Data Architecture)
+---
 
-### 2.1 데이터베이스 스키마 (PostgreSQL)
+## 2. [Total Trouble Log] 상세 트러블슈팅 이력 (Private Space)
 
-#### Table: `private_diaries`
+개발 과정에서 직면한 중대 이슈들과 이를 극복한 기술적 의사결정 기록입니다.
 
-| Column       | Type        | Description              |
-| :----------- | :---------- | :----------------------- |
-| `id`         | TEXT (UUID) | 기본 키                  |
-| `userId`     | TEXT        | 사용자 ID (Foreign Key)  |
-| `entry_date` | DATE        | 기록 날짜 (사용자 선택)  |
-| `content`    | TEXT        | 일기 내용                |
-| `images`     | JSONB       | 사진 URL 배열 (최대 N개) |
-| `created_at` | TIMESTAMP   | 생성 일시                |
-| `updated_at` | TIMESTAMP   | 수정 일시                |
+| 시각/버전 | 트러블 (Issue)             | 발생 원인 (Root Cause)                                                                         | 해결 로직 및 개선 사항 (Resolution Logic)                                                                          | 검증 시나리오 (Verification)                                                         |
+| :-------- | :------------------------- | :--------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------- |
+| **v4.0**  | **Diary Data 파싱 에러**   | 다이어리 내 특수 기호(`&`, `"`) 등이 DB 저장 후 JSON 파싱 단계에서 중첩 따옴표 문제 유발       | 백엔드 컨트롤러에서 `JSONB` 저장 규격을 표준화하고, 프론트엔드 유효성 검사에서 이스케이프(`Escape`) 처리 강화      | 이모지 및 다국어 장문 텍스트 저장 후 재로드 시 렌더링 무결성 확인                    |
+| **v4.15** | **6주차 데이터 클리핑**    | 캘린더 타일 높이를 `120px`로 상향했으나, 상위 레이어가 비반응형 고정 높이(`h-screen`)를 강제함 | `PrivateCalendarMain.jsx`의 메인 구조를 `min-h-screen`으로 완화하고 헤더 높이를 동적으로 계산하게 변경             | 2026년 3월 등 6주가 표기되는 달에도 전체 행이 가시 영역에 노출됨을 확인              |
+| **v4.20** | **UI 시인성 붕괴 (Mushy)** | 블러 강도가 너무 높고 경계선(`border`)이 얇아 타일 간의 경계가 배경 이미지에 묻히는 현상       | `backdrop-blur-3xl`을 유지하되 `border-white/15` 및 `background-white/5`의 대비를 강화하여 유리 질감의 선명도 확보 | 매우 밝거나 화려한 배경에서도 날짜 숫자의 가독성이 유지되는지 전수 체크              |
+| **v4.25** | **1080p 수직 해상도 초과** | 높아진 그리드(`84px`)와 과도한 헤더 공간으로 인해 하단 다이어리 영역이 화면 밖으로 밀려남      | 헤더 폰트 `2xl` 스케일링, 상단 마진 `mb-10` -> `mb-3` 압축, 타일 최적 높이 `78px` 도출 (수직 공간 120px 절약)      | 1920x1080 및 1440x900 노트북 환경에서 다이어리 저장 버튼이 스크롤 없이 보이는지 확인 |
 
-#### Table: `private_habits`
+---
 
-| Column            | Type        | Description                       |
-| :---------------- | :---------- | :-------------------------------- |
-| `id`              | TEXT (UUID) | 기본 키                           |
-| `userId`          | TEXT        | 사용자 ID                         |
-| `habit_name`      | TEXT        | 습관 명칭 (예: 아침 명상)         |
-| `start_time`      | TIME        | 시작 시간                         |
-| `end_time`        | TIME        | 종료 시간 (선택)                  |
-| `repeat_type`     | TEXT        | 반복 유형 (Daily, Weekly, Custom) |
-| `repeat_days`     | INT[]       | 반복 요일 (0-6, Sunday-Saturday)  |
-| `goal_start_date` | DATE        | 목표 시작일                       |
-| `goal_end_date`   | DATE        | 목표 종료일                       |
-| `reminder_time`   | TIME        | 알림 시간                         |
-| `is_active`       | BOOLEAN     | 활성화 여부                       |
+## 3. 핵심 모듈별 구현 로직 상세 (Sub-System Design)
 
-#### Table: `private_habit_logs`
+### A. Temporal Record Engine (Diary)
 
-| Column       | Type    | Description  |
-| :----------- | :------ | :----------- |
-| `id`         | SERIAL  | 기본 키      |
-| `habit_id`   | TEXT    | 습관 ID (FK) |
-| `check_date` | DATE    | 완료 날짜    |
-| `status`     | BOOLEAN | 달성 여부    |
+- **Logic**: 상태값(`diaryContent`)의 불필요한 서버 호출 방지를 위해 `Debounce` 저장 방식 고려 중.
+- **Rendering**: `textarea`에 `leading-relaxed`와 `text-xl`을 주어 일기장 특유의 필기 가독성 부여.
 
-## 3. 백엔드 구현 전략 (Backend Strategy)
+### B. Neural Protocol Tracker (Habit)
 
-### 3.1 API Endpoint 설계
+- **Database**: `private_habit_logs` 테이블의 유니크 키(`userId`, `habitId`, `log_date`)를 활용하여 동시성 이슈 원천 차단.
+- **UI**: 마커(Dot) 노출 시 해당 날의 전체 습관 리스트를 팝오버로 연동하는 렌더링 로직 추가.
 
-- `POST /api/v2/private/diary`: 다이어리 생성/수정 (Upsert)
-- `GET /api/v2/private/diary?date=YYYY-MM-DD`: 특정 날짜 다이어리 조회
-- `GET /api/v2/private/habits`: 전체 습관 리스트 조회
-- `POST /api/v2/private/habits`: 신규 습관 등록
-- `PATCH /api/v2/private/habits/:id/check`: 습관 완료 체크
+### C. Hero Mode Layout Engine
 
-### 3.2 이미지 처리
+- **Constraint**: 좌측 6.8(Main), 우측 3.2(Control)의 황금 비율을 유지하면서도 가변 해상도에 대응함.
+- **Shadow**: `shadow-[0_50px_120px_rgba(0,0,0,0.7)]`와 같은 중량감 있는 그림자를 사용하여 깊이감 있는 입체감 형성.
 
-- 1차: Base64 또는 임시 URL 처리
-- 2차(확장): Multer를 이용한 로컬 스토리지 또는 S3 연동
+---
 
-## 4. 프론트엔드 구현 전략 (Frontend Strategy)
+## 4. 정밀 검증 계획 (Testing Protocol)
 
-### 4.1 컴포넌트 구조
+### [Verification 1] Space Integrity
 
-- `PrivateCalendarMain`: 메인 레이아웃 및 상단 탭 (Diary, Habit, To-Do, Schedule)
-- `DiaryPanel`: 텍스트 에디터 및 이미지 업로드 UI
-- `HabitPanel`: 프리셋 선택 리스트 및 설정 모달
-- `HabitSettingsModal`: 시간/주기/알림 정밀 설정
+- **Method**: 캘린더 이동(년/월 이동) 버튼을 고속 클릭하며 데이터 패칭 지연과 UI 렌더링 사이의 레이스 컨디션 여부 조사.
+- **Target**: 모든 월 이동이 0.15초 이내에 시각적 정합성을 갖춤.
 
-### 4.2 상태 관리 (Redux)
+### [Verification 2] Media Handling
 
-- `privateCalendarSlice`: `diaries`, `habits`, `selectedDate` 등의 상태 관리.
-- 비동기 Thunk를 통한 API 연동.
+- **Method**: 5MB 초과 고해상도 이미지 업로드 시 썸네일 생성 속도 및 메모리 사용량 측정.
+- **Target**: 브라우저 탭 메모리가 이미지 로드 시 300MB를 넘지 않도록 관리.
 
-## 5. UI/UX 디자인 원칙
+## 5. 작업 히스토리 요약 및 현황
 
-- **Premium Aesthetics**: 네이버 캘린더의 깔끔함을 기반으로 하되, 다크 모드와 글래스모피즘을 적용하여 고급스러운 느낌 강조.
-- **Micro-animations**: 습관 체크 시의 만족감을 주는 스파클링 효과 또는 부드러운 트랜지션 추가.
-
-## 6. 리스크 및 대응방안 ([주의])
-
-- **데이터 유실**: 다이어리 작성 중 자동 저장(Auto-save) 기능 검토 필요.
-- **이미지 용량**: 업로드 시 클라이언트 측에서 압축 처리 로직 필요.
-- **포트 충돌**: V1(8000), V2(8001) 환경을 유지하며 신규 라우트가 정상적으로 로드되는지 확인.
+- **Phase 1-4**: 초기 인프라 및 핵심 모듈 CRUD 완성.
+- **Phase 8-9**: 디자인 고도화 및 수직 최적화 완료.
+- **현황**: 안정성 검증 시나리오 및 예외 상황 대응 로직 보강 중.
