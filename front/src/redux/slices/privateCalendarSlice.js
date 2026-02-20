@@ -108,11 +108,43 @@ export const addScheduleThunk = createAsyncThunk(
   },
 );
 
+// 모든 다이어리 목록 조회 (마킹용)
+export const fetchAllDiariesThunk = createAsyncThunk(
+  'private/fetchAllDiaries',
+  async ({ userId }, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/diaries/all?userId=${userId}`,
+      );
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response.data);
+    }
+  },
+);
+
+// 모든 습관 로그 조회 (마킹용)
+export const fetchAllHabitLogsThunk = createAsyncThunk(
+  'private/fetchAllHabitLogs',
+  async ({ userId }, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/habits/logs/all?userId=${userId}`,
+      );
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response.data);
+    }
+  },
+);
+
 const privateCalendarSlice = createSlice({
   name: 'privateCalendar',
   initialState: {
     currentDiary: null,
+    allDiaries: [], // 마크용 전체 일기 데이터
     habits: [],
+    allHabitLogs: [], // 마크용 전체 습관 로그 데이터
     schedules: [],
     loading: false,
     error: null,
@@ -151,6 +183,14 @@ const privateCalendarSlice = createSlice({
       // Schedules
       .addCase(fetchSchedulesThunk.fulfilled, (state, action) => {
         state.schedules = action.payload;
+      })
+      // All Diaries (Marking)
+      .addCase(fetchAllDiariesThunk.fulfilled, (state, action) => {
+        state.allDiaries = action.payload;
+      })
+      // All Habit Logs (Marking)
+      .addCase(fetchAllHabitLogsThunk.fulfilled, (state, action) => {
+        state.allHabitLogs = action.payload;
       });
   },
 });

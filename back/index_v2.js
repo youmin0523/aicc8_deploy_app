@@ -6,7 +6,8 @@ require('dotenv').config(); // .env 변수 설정
 const app = express();
 
 app.use(cors()); // 크로스 오리진 설정
-app.use(express.json()); // json 데이터 파싱
+app.use(express.json({ limit: '50mb' })); //* [Modified Code] 대용량 이미지 데이터(Base64) 수용을 위해 50mb로 확장
+app.use(express.urlencoded({ limit: '50mb', extended: true })); //* [Added Code] URL 인코딩 데이터도 용량 확장
 
 // 3. root 설정 (V2)
 app.get('/', (request, response) => {

@@ -214,3 +214,36 @@ exports.postSchedule = async (req, res) => {
     return res.status(500).json({ msg: '일정 등록 실패' });
   }
 };
+// --- 4. Marking (통합 조회) 로직 ---
+
+/**
+ * 사용자의 모든 다이어리 날짜 목록 조회 (캘린더 마킹용)
+ */
+exports.getAllDiaries = async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const query = `SELECT entry_date FROM private_diaries WHERE userId = $1`;
+    const result = await database.pool.query(query, [userId]);
+    return res.status(200).json(result.rows);
+  } catch (err) {
+    return res.status(500).json({ msg: '전체 다이어리 조회 실패' });
+  }
+};
+
+/**
+ * 사용자의 모든 습관 달성 로그 조회 (캘린더 마킹용)
+ */
+exports.getAllHabitLogs = async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const query = `
+            SELECT check_date FROM private_habit_logs l
+            JOIN private_habits h ON l.habitId = h._id
+            WHERE h.userId = $1
+        `;
+    const result = await database.pool.query(query, [userId]);
+    return res.status(200).json(result.rows);
+  } catch (err) {
+    return res.status(500).json({ msg: '전체 습관 로그 조회 실패' });
+  }
+};

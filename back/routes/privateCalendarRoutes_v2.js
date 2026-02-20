@@ -23,4 +23,14 @@ router.post(
   privateCalendarController.postSchedule,
 );
 
+// 4. 마킹용 통합 조회
+router.get(
+  '/api/v2/private/diaries/all',
+  privateCalendarController.getAllDiaries,
+);
+router.get(
+  '/api/v2/private/habits/logs/all',
+  privateCalendarController.getAllHabitLogs,
+);
+
 module.exports = router;

@@ -125,6 +125,37 @@ const TodoTab = () => {
     toast.success('New Task Synchronized');
   };
 
+  // //* [Added Code] 설명란 스마트 블릿 포인트 핸들러
+  const handleDescriptionChange = (e) => {
+    let value = e.target.value;
+    // 첫 입력 시 - 가 없으면 추가
+    if (value && !value.startsWith('- ')) {
+      value = '- ' + value;
+    }
+    setNewTodo({ ...newTodo, description: value });
+  };
+
+  const handleDescriptionKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const { selectionStart, selectionEnd, value } = e.target;
+
+      // 현재 커서 위치에 줄바꿈 + 블릿 포인트 삽입
+      const newValue =
+        value.substring(0, selectionStart) +
+        '\n- ' +
+        value.substring(selectionEnd);
+
+      setNewTodo({ ...newTodo, description: newValue });
+
+      // 커서 위치 조정을 위해 다음 렌더링 사이클에서 위치 설정
+      const newCursorPos = selectionStart + 3;
+      setTimeout(() => {
+        e.target.selectionStart = e.target.selectionEnd = newCursorPos;
+      }, 0);
+    }
+  };
+
   return (
     <div className="flex gap-10 h-full max-h-full overflow-hidden animate-in slide-in-from-right-10 duration-500">
       {/* Search & List Section */}
@@ -476,11 +507,10 @@ const TodoTab = () => {
                   </label>
                   <textarea
                     value={newTodo.description}
-                    onChange={(e) =>
-                      setNewTodo({ ...newTodo, description: e.target.value })
-                    }
+                    onChange={handleDescriptionChange}
+                    onKeyDown={handleDescriptionKeyDown}
                     className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-3 text-sm font-bold text-white focus:outline-none focus:border-blue-500/50 transition-all min-h-[80px] resize-none"
-                    placeholder="Additional context or sub-tasks..."
+                    placeholder="List sub-tasks (auto-bullets enabled)"
                   />
                 </div>
               </div>

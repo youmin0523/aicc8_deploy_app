@@ -24,10 +24,9 @@ import {
 import { openModalV2 } from '../../redux/slices/modalSlice_v2';
 import { toast } from 'react-toastify';
 import { isSameDay, parseISO } from 'date-fns';
+import axios from 'axios';
 
-// //* [V2 Premium Components: NeonOrb & TodoPopup]
-// //* V1의 핵심 UX인 Neon Orb 시스템을 V2 아키텍처에 맞게 재설계하여 이식했습니다.
-
+// //* [Sub-Component] TodoPopup
 const TodoPopup = ({
   title,
   tasks,
@@ -113,6 +112,7 @@ const TodoPopup = ({
   </div>
 );
 
+// //* [Sub-Component] NeonOrb
 const NeonOrb = ({ count, icon, color, onTrigger, onLeave }) => {
   const styles = {
     red: 'from-rose-500 to-red-900 shadow-[0_0_20px_rgba(244,63,94,0.3)] hover:shadow-[0_0_40px_rgba(244,63,94,0.6)] border-rose-500/40',
@@ -146,11 +146,7 @@ const NeonOrb = ({ count, icon, color, onTrigger, onLeave }) => {
   );
 };
 
-// //* [Mentor's Encyclopedia: NavbarV2 (UI/Logic Restore)]
-// //* 1. 데이터 소스: Redux 'auth' + 'categoriesV2' (V2 전용 슬라이스 명칭 복구).
-// //* 2. UI 복구: V2 전용 사이드바 너비(w-72/w-20), 전용 로고 그래픽, 유저 프로필 스타일을 원상 복구했습니다.
-// //* 3. 기능 복구: 초기 진입 시 카테고리 자동 생성(Auto-Init) 로직과 V1 전환 링크를 다시 연결했습니다.
-
+// //* [Main Component] NavbarV2
 const NavbarV2 = () => {
   const dispatch = useDispatch();
   const auth = useSelector((state) => state.auth.authData);
@@ -167,7 +163,6 @@ const NavbarV2 = () => {
     const initCategories = async (userId) => {
       if (isInitializing.current) return;
       isInitializing.current = true;
-
       try {
         const existingCats = await dispatch(fetchCategories(userId)).unwrap();
         if (existingCats && existingCats.length === 0) {
@@ -178,7 +173,6 @@ const NavbarV2 = () => {
             { name: 'Privacy', color: '#9013FE' },
             { name: 'Etc', color: '#4A4A4A' },
           ];
-
           for (const cat of defaultCats) {
             await dispatch(fetchPostCategory({ ...cat, userId })).unwrap();
           }
@@ -191,10 +185,7 @@ const NavbarV2 = () => {
         isInitializing.current = false;
       }
     };
-
-    if (auth?.sub) {
-      initCategories(auth.sub);
-    }
+    if (auth?.sub) initCategories(auth.sub);
   }, [auth?.sub, dispatch]);
 
   const todaysTasks = tasks?.filter(
@@ -230,26 +221,23 @@ const NavbarV2 = () => {
   const handleCalendarClick = (e) => {
     if (location.pathname === '/v2') {
       e.preventDefault();
-      const calendarSection = document.getElementById('calendar-view');
-      if (calendarSection) {
-        calendarSection.scrollIntoView({ behavior: 'smooth' });
-      }
+      document
+        .getElementById('calendar-view')
+        ?.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
   const handleAllTasksClick = (e) => {
     if (location.pathname === '/v2') {
       e.preventDefault();
-      const tasksSection = document.getElementById('tasks-top');
-      if (tasksSection) {
-        tasksSection.scrollIntoView({ behavior: 'smooth' });
-      }
+      document
+        .getElementById('tasks-top')
+        ?.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
   return (
     <>
-      {/* //* [V2 Premium Header] Neon Orbs 통합 */}
       <header className="fixed top-0 right-0 p-6 z-[1000] pointer-events-none">
         <div className="flex items-center gap-5 pointer-events-auto">
           <NeonOrb
@@ -269,7 +257,6 @@ const NavbarV2 = () => {
         </div>
       </header>
 
-      {/* Popups */}
       {activeOrb === 'today' && (
         <TodoPopup
           title="Incursion Status: TODAY"
@@ -341,17 +328,14 @@ const NavbarV2 = () => {
           </Link>
           <Link
             to="/v2/private"
-            className="flex items-center gap-4 p-3 hover:bg-gray-800 rounded-xl transition-colors"
+            className={`flex items-center gap-4 p-3 hover:bg-gray-800 rounded-xl transition-colors ${location.pathname === '/v2/private' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : ''}`}
           >
             <MdLock size={24} className="text-rose-400" />
-            <span
-              className={`${!isSidebarOpen && 'hidden'} font-bold text-rose-100`}
-            >
+            <span className={`${!isSidebarOpen && 'hidden'} font-bold`}>
               Private Space
             </span>
           </Link>
 
-          {/* V1 전환 링크 복원 */}
           <div className="pt-4 mt-4 border-t border-gray-800">
             <Link
               to="/"
@@ -382,7 +366,7 @@ const NavbarV2 = () => {
                 <p className="text-sm font-bold truncate">{auth.name}</p>
                 <button
                   onClick={() => dispatch(logout())}
-                  className="text-xs text-gray-500 hover:text-red-400"
+                  className="text-xs text-gray-500 hover:text-red-400 font-black tracking-widest uppercase"
                 >
                   Logout
                 </button>
@@ -390,9 +374,9 @@ const NavbarV2 = () => {
             </div>
           ) : (
             <p
-              className={`text-sm text-gray-500 text-center ${!isSidebarOpen && 'hidden'}`}
+              className={`text-sm text-gray-500 text-center ${!isSidebarOpen && 'hidden'} font-black uppercase tracking-widest`}
             >
-              Login Required
+              Access Denied
             </p>
           )}
         </div>
