@@ -2,7 +2,7 @@
 
 ## 0. Revision History (Project-Wide)
 
-**[Latest Revision: v2.7_260220]**
+**[Latest Revision: v2.8_260223]**
 
 ### Phase 1: V1 Core Infrastructure (260129)
 
@@ -28,11 +28,11 @@
 - **Work Content**: 비동기 상태 갱신(No-Refresh) 처리, Search & Filter 정합성 고도화.
 - **Troubles**: 대량 데이터 로드 시 렌더링 병목 현상(Lags) 최적화.
 
-### Phase 7: Private Calendar V2 Refactoring (Current)
+### Phase 7: Private Calendar V2 Refactoring & Bug Fixes (Current)
 
-- **Status**: [In Progress] 90%
-- **Work Content**: 레이아웃 안정화, 통합 마킹 시스템, 시네마틱 FAB, 스마트 블릿 에디터 구현.
-- **Current Milestone**: 마커 가시성 및 스마트 에디터 UX 보정 완료.
+- **Status**: [In Progress] 100%
+- **Work Content**: 레이아웃 안정화, 통합 마킹 시스템, 시네마틱 FAB 복구, 단독 Calendar 노출, Dashboard(ShowAll) 레이아웃 재설계(Grid/Flex 분할), UI 간섭 픽스, 일반 문서(PDF/DOCX) 첨부, 덮어쓰기 Read-Only 모드 통제, 인라인 Quick Modal(Todo, Schedule, Habit 추가/수정) 구현, 누락 모듈 HotFix 적용, 첨부 파일/이미지 식별형 썸네일 UX 고도화, 풀스크린 Diary 탭 썸네일 동기화, Private Space 진입용 4자리 영구 PIN 암호 시스템(Lock Screen) 구축, PIN 분실 및 오작동 구제 시스템 개발, ShowAll 위젯 헤더 직관화(Rename).
+- **Current Milestone**: 사용자 피드백 즉각 반영 및 UX 고도화 설계(기능 조작성 및 무결성) 완료 (강력한 클라이언트 사이드 물리적 화면 잠금장치 탑재 및 헤더 텍스트 직관성 개선 완료).
 
 ---
 
@@ -40,18 +40,18 @@
 
 ### [Task 1] User Authentication (OAuth)
 
-- [x] **Logic**: `@react- [x] V1/V2 통합 인증 세션 복구 (이중 로그인 제거)
+- [x] **Logic**: V1/V2 통합 인증 세션 복구 및 이중 로그인 제거.
 - [x] 서버 JSON 페이로드 용량 확장 (50MB)
 - [x] 이미지 포함 다이어리 저장 로직 정상화
-- [ ] 다이어리 텍스트 영역 스크롤 및 레이아웃 완벽화 (Pending)시 로컬 스토리지 클리어 및 Redux 초기화 완료.
-- **[Verification Required]**: 토큰 만료 후 보호된 경로 접근 시 401 에러와 함께 로그인 유도 모달 노출 여부 다시 확인.
+- [ ] 다이어리 텍스트 영역 스크롤 및 레이아웃 완벽화 (Pending)
+- **[Verification Required]**: 토큰 만료 후 보호된 경로 접근 시 401 에러와 함께 로그인 유도 모달 노출 여부.
 
 ### [Task 2] Dashboard Layout & Sidebar (Refined)
 
-- [x] **Component**: `NavbarV2`, `PrivateCalendarMain` 레이아웃 고정(`h-screen`).
-- [x] **UX**: 캘린더/다이어리 1.4:1 비율 최적화 및 6주차 대응 타일 높이(62px) 보정.
-- [x] **Cinematic**: "Gift Unboxing" FAB (Burst & Collect) 애니메이션 적용.
-- **[Verification Required]**: 저해상도 기기에서 FAB 버튼과 다이어리 입력창의 간섭 유무 재검수.
+- [x] **Component**: `NavbarV2`, `PrivateCalendarMain` 레이아웃 고정(`h-screen`), 모든 탭(Calendar, Diary, Habit, Schedule, Todo) 노출 및 네비게이션 연결 완료.
+- [x] **UX**: 캘린더 일요일(Sunday) 시작(`calendarType="gregory"`) 복구 완료.
+- [x] **Cinematic**: "Gift Unboxing" FAB 애니메이션에 4종(Diary, Habit, Schedule, Todo) 아이콘 모두 노출 및 호버 디자인 고도화.
+- **[Verification Required]**: 각종 랩탑 및 저해상도 기기에서 우측 상단 탭 버튼들 간의 간섭 유무.
 
 ### [Task 3] Item Service & Marking Logic
 

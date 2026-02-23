@@ -6,6 +6,8 @@ import {
   MdCalendarToday,
   MdChevronLeft,
   MdChevronRight,
+  MdAttachFile,
+  MdClose,
 } from 'react-icons/md';
 import {
   fetchDiaryThunk,
@@ -33,12 +35,54 @@ const DiaryTab = () => {
   useEffect(() => {
     if (currentDiary) {
       setContent(currentDiary.content || '');
-      setImages(currentDiary.images || []);
+      try {
+        if (currentDiary.images) {
+          const parsed =
+            typeof currentDiary.images[0] === 'string'
+              ? currentDiary.images.map((imgUrl, i) => ({
+                  id: i,
+                  url: imgUrl,
+                  name: `image_${i + 1}.jpg`,
+                  type: 'image/jpeg',
+                }))
+              : currentDiary.images;
+          setImages(parsed || []);
+        } else {
+          setImages([]);
+        }
+      } catch (e) {
+        setImages([]);
+      }
     } else {
       setContent('');
       setImages([]);
     }
   }, [currentDiary]);
+
+  // [*Added Code] 파일 업로드 및 삭제 로직 추가 (CalendarTab 동기화)
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + Math.random(),
+            url: reader.result,
+            name: file.name,
+            type: file.type || '',
+          },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
+  const removeImage = (id) => {
+    setImages(images.filter((img) => img.id !== id));
+  };
 
   const handleSave = async () => {
     if (!content.trim()) {
@@ -133,34 +177,95 @@ const DiaryTab = () => {
               <MdImage /> Visual Data
             </h3>
             <div className="grid grid-cols-2 gap-3 mb-6">
-              {images.map((img, i) => (
-                <div
-                  key={i}
-                  className="aspect-square bg-white/5 rounded-2xl border border-white/10 overflow-hidden group relative"
-                >
-                  <img
-                    src={img}
-                    alt="upload"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <button className="text-[8px] font-black uppercase text-red-500 hover:text-white">
-                      Delete
-                    </button>
+              {images.map((img, i) => {
+                const isImage =
+                  img.url?.startsWith('data:image') ||
+                  img.type?.startsWith('image/') ||
+                  img.name?.match(/\.(jpeg|jpg|gif|png|webp|bmp|svg)$/i);
+
+                return (
+                  <div
+                    key={img.id || i}
+                    className="aspect-square bg-[#16181d] rounded-2xl border border-white/10 overflow-hidden group relative flex flex-col items-center justify-between shadow-2xl transition-all hover:-translate-y-1 z-10"
+                  >
+                    {isImage ? (
+                      <div className="w-full flex-1 bg-black/40 overflow-hidden relative">
+                        <img
+                          src={img.url}
+                          alt="preview"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-60"></div>
+                      </div>
+                    ) : (
+                      <div className="w-full flex-1 flex flex-col items-center justify-center p-2 text-gray-400 bg-white/5 relative">
+                        <MdAttachFile
+                          size={32}
+                          className="mb-1 text-emerald-400/80 drop-shadow-lg"
+                        />
+                      </div>
+                    )}
+
+                    <div className="w-full h-[35px] bg-[#0f1115]/90 backdrop-blur-md flex items-center justify-center px-2 border-t border-white/5 shrink-0 z-10 relative">
+                      <span className="text-[10px] font-bold text-gray-300 truncate w-full text-center tracking-wider">
+                        {img.name || 'document.file'}
+                      </span>
+                    </div>
+
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center font-bold z-20">
+                      <button
+                        onClick={() => removeImage(img.id)}
+                        className="w-10 h-10 bg-red-500/80 hover:bg-red-500 backdrop-blur-md rounded-full text-white flex items-center justify-center shadow-2xl transform hover:scale-110 transition-all"
+                      >
+                        <MdClose size={18} />
+                      </button>
+                    </div>
                   </div>
+                );
+              })}
+              {images.length === 0 && (
+                <div className="aspect-square border border-dashed border-white/10 rounded-2xl flex items-center justify-center text-gray-600 font-bold uppercase tracking-widest text-[9px]">
+                  Empty
                 </div>
-              ))}
-              <button className="aspect-square bg-white/5 hover:bg-white/10 rounded-2xl border border-dashed border-white/20 flex flex-col items-center justify-center transition-all group">
+              )}
+            </div>
+
+            {/* Added Inputs for Image & Document (CalendarTab 동기화) */}
+            <div className="flex gap-2">
+              <label className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-dashed border-white/20 flex flex-col items-center justify-center transition-all group cursor-pointer z-10">
                 <MdImage
                   size={24}
-                  className="text-gray-600 group-hover:text-blue-500 mb-2"
+                  className="text-gray-600 group-hover:text-blue-500 mb-1 transition-colors"
                 />
-                <span className="text-[8px] font-black text-gray-600">
-                  Add Image
+                <span className="text-[8px] font-black text-gray-400 group-hover:text-blue-400 uppercase tracking-widest transition-colors">
+                  Image
                 </span>
-              </button>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+              </label>
+              <label className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-dashed border-white/20 flex flex-col items-center justify-center transition-all group cursor-pointer z-10">
+                <MdAttachFile
+                  size={24}
+                  className="text-gray-600 group-hover:text-emerald-500 mb-1 transition-colors"
+                />
+                <span className="text-[8px] font-black text-gray-400 group-hover:text-emerald-400 uppercase tracking-widest transition-colors">
+                  Doc
+                </span>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+              </label>
             </div>
-            <p className="text-[9px] text-gray-600 italic leading-tight uppercase font-bold">
+            <p className="text-[9px] text-gray-600 italic leading-tight uppercase font-bold mt-4">
               Supports JPG, PNG up to 5MB. Images are encrypted and stored in
               private nodes.
             </p>
